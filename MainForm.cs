@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Data;
 using System.Drawing;
 using System.Globalization;
@@ -11,11 +12,11 @@ namespace ProShitje13 {
  public class MainForm : Form {
   readonly AppConfig cfg; readonly bool licensed; readonly DatabaseService db=new DatabaseService();
   readonly Color navy=Color.FromArgb(22,35,58), blue=Color.FromArgb(48,93,160), bg=Color.FromArgb(244,247,251), green=Color.FromArgb(15,145,105);
-  Panel content=new Panel(); Label status=new Label(); TextBox searchBox; DataGridView productsGrid, basketGrid; readonly System.Collections.Generic.Dictionary<string,Button> navButtons=new System.Collections.Generic.Dictionary<string,Button>(); Panel sidebar; Label pageTitle;
-  DataTable basket; ComboBox customerCombo; Label totalLabel; Timer searchTimer; string currentPage="Dashboard"; bool searching=false; int searchRequestId=0;
+  Panel content=new Panel(); Label status=new Label(); TextBox searchBox; DataGridView productsGrid, basketGrid; FlowLayoutPanel productTiles; readonly System.Collections.Generic.Dictionary<string,Button> navButtons=new System.Collections.Generic.Dictionary<string,Button>(); Panel sidebar; Label pageTitle;
+  DataTable basket; ComboBox customerCombo; Label totalLabel; Timer searchTimer; string currentPage="Dashboard"; bool searching=false; int searchRequestId=0; int selectedProductTile=-1; bool addFirstFilteredOnEnter=false;
   public MainForm(AppConfig c,bool lic) {
    cfg=c; licensed=lic; Text="ProShitje 1.3"; WindowState=FormWindowState.Maximized; MinimumSize=new Size(1000,650); Font=new Font("Segoe UI",10); BackColor=bg; KeyPreview=true;
-   KeyDown+=(s,e)=>{ if(e.KeyCode==Keys.F5){ e.SuppressKeyPress=true; GenerateFiscalTxt(); } else if(e.KeyCode==Keys.F6){e.SuppressKeyPress=true; MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Kjo shmang regjistrimin e një shitjeje të paplotë.", "F6 · Ruaj", MessageBoxButtons.OK, MessageBoxIcon.Warning);} else if(e.KeyCode==Keys.F7){e.SuppressKeyPress=true; MessageBox.Show("Printimi i faturës së shitjes nuk është lidhur ende. Eksporti AED TXT është funksion i veçantë.", "F7 · Printo", MessageBoxButtons.OK, MessageBoxIcon.Information);}};
+   KeyDown+=(s,e)=>{ if(e.KeyCode==Keys.Enter && currentPage=="Shitje" && searchBox!=null && !searchBox.Focused){AddSelectedProductTile();e.SuppressKeyPress=true;} else if(e.KeyCode==Keys.F5){ e.SuppressKeyPress=true; GenerateFiscalTxt(); } else if(e.KeyCode==Keys.F6){e.SuppressKeyPress=true; MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Kjo shmang regjistrimin e një shitjeje të paplotë.", "F6 · Ruaj", MessageBoxButtons.OK, MessageBoxIcon.Warning);} else if(e.KeyCode==Keys.F7){e.SuppressKeyPress=true; MessageBox.Show("Printimi i faturës së shitjes nuk është lidhur ende. Eksporti AED TXT është funksion i veçantë.", "F7 · Printo", MessageBoxButtons.OK, MessageBoxIcon.Information);}};
    basket=new DataTable(); basket.Columns.Add("Id",typeof(int)); basket.Columns.Add("Kodi",typeof(string)); basket.Columns.Add("Barkodi",typeof(string)); basket.Columns.Add("Artikulli",typeof(string)); basket.Columns.Add("Njësia",typeof(string)); basket.Columns.Add("Sasia",typeof(decimal)); basket.Columns.Add("Cmimi",typeof(decimal)); basket.Columns.Add("DPT",typeof(int)); basket.Columns.Add("Totali",typeof(decimal), "Sasia * Cmimi");
    searchTimer=new Timer{Interval=250}; searchTimer.Tick+=(s,e)=>{searchTimer.Stop(); _=LoadProductsAsync(searchBox==null?"":searchBox.Text);};
    BuildShell(); Shown+=(s,e)=>Connect();
@@ -85,7 +86,12 @@ namespace ProShitje13 {
    var hint=new Label{Text="Shkruaj për kërkim automatik • skano barkodin",Left=575,Top=16,AutoSize=true,ForeColor=Color.Gray};bar.Controls.Add(hint);
    productsGrid=NewGrid();content.Controls.Add(productsGrid);productsGrid.BringToFront();bar.BringToFront();
    searchBox.TextChanged+=(s,e)=>{searchTimer.Stop();searchTimer.Start();};
-   searchBox.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){searchTimer.Stop();_=LoadProductsAsync(SearchTerm(searchBox));e.SuppressKeyPress=true;}};
+   searchBox.KeyDown+=(s,e)=>{
+    if(e.KeyCode==Keys.Enter){searchTimer.Stop();addFirstFilteredOnEnter=true;_=LoadProductsAsync(SearchTerm(searchBox));e.SuppressKeyPress=true;}
+    else if(e.KeyCode==Keys.Down||e.KeyCode==Keys.Right||e.KeyCode==Keys.Up||e.KeyCode==Keys.Left){
+     if(productTiles!=null&&productTiles.Controls.Count>0){int delta=(e.KeyCode==Keys.Down||e.KeyCode==Keys.Right)?1:-1;selectedProductTile=(selectedProductTile+delta+productTiles.Controls.Count)%productTiles.Controls.Count;HighlightProductTile();e.SuppressKeyPress=true;}
+    }
+   };
    productsGrid.DoubleClick+=(s,e)=>{if(currentPage=="Shitje")AddSelectedProduct();};
    _=LoadProductsAsync("");
   }
@@ -96,6 +102,16 @@ namespace ProShitje13 {
     DataTable dt=await Task.Run(()=>DatabaseService.SearchProductsIndependent(cfg.DatabasePath,cfg.DatabasePassword,searched));
     if(request!=searchRequestId || grid.IsDisposed || grid!=productsGrid)return;
     grid.DataSource=dt;status.Text="Artikuj të gjetur: "+dt.Rows.Count;
+    if(currentPage=="Shitje"){RenderProductTiles();selectedProductTile=productTiles!=null&&productTiles.Controls.Count>0?0:-1;HighlightProductTile();}
+    if(addFirstFilteredOnEnter && currentPage=="Shitje" && searched.Length>0 && dt.Rows.Count>0){
+      addFirstFilteredOnEnter=false;AddProductRow(dt.Rows[0]);status.Text="U shtua artikulli i parë nga kërkimi: "+Convert.ToString(dt.Rows[0]["Artikulli"]);if(searchBox!=null){searchBox.Clear();searchBox.Focus();}return;
+    }
+    addFirstFilteredOnEnter=false;
+    if(currentPage=="Shitje"){RenderProductTiles();selectedProductTile=productTiles!=null&&productTiles.Controls.Count>0?0:-1;HighlightProductTile();}
+    if(addFirstFilteredOnEnter && currentPage=="Shitje" && searched.Length>0 && dt.Rows.Count>0){
+      addFirstFilteredOnEnter=false;AddProductRow(dt.Rows[0]);status.Text="U shtua artikulli i parë nga kërkimi: "+Convert.ToString(dt.Rows[0]["Artikulli"]);if(searchBox!=null){searchBox.Clear();searchBox.Focus();}return;
+    }
+    addFirstFilteredOnEnter=false;
     if(currentPage=="Shitje" && searched.Length>0 && dt.Rows.Count==1 &&
        (String.Equals(Convert.ToString(dt.Rows[0]["Barcodi"]).Trim(),searched,StringComparison.OrdinalIgnoreCase) || String.Equals(Convert.ToString(dt.Rows[0]["Kodi"]).Trim(),searched,StringComparison.OrdinalIgnoreCase))) {
       AddProductRow(dt.Rows[0]); if(searchBox!=null){searchBox.Clear();searchBox.Focus();}
@@ -139,9 +155,10 @@ namespace ProShitje13 {
    var productsPanel=new Panel{Dock=DockStyle.Fill,BackColor=bg,Padding=new Padding(0,0,6,0)};
    var basketPanel=new Panel{Dock=DockStyle.Fill,BackColor=bg,Padding=new Padding(6,0,0,0)};
    salesLayout.Controls.Add(productsPanel,0,0);salesLayout.Controls.Add(basketPanel,1,0);content.Controls.Add(salesLayout);salesLayout.BringToFront();tools.BringToFront();
-   productsGrid=NewGrid();productsGrid.DataBindingComplete+=(s,e)=>ConfigureProductColumns();productsGrid.CellContentClick+=(s,e)=>{if(e.RowIndex>=0&&productsGrid.Columns[e.ColumnIndex] is DataGridViewButtonColumn)AddProductFromGridRow(e.RowIndex);};productsPanel.Controls.Add(productsGrid);
-   var resultHeader=new Label{Text="  ARTIKUJT E GJETUR  ·  Dy klikime ose ENTER për shtim",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft,BackColor=Color.White};productsPanel.Controls.Add(resultHeader);resultHeader.BringToFront();
-   basketGrid=NewGrid();basketGrid.ReadOnly=false;basketGrid.DataSource=basket;basketPanel.Controls.Add(basketGrid);
+   productsGrid=NewGrid();productsGrid.Visible=false;productsGrid.DataBindingComplete+=(s,e)=>RenderProductTiles();productsPanel.Controls.Add(productsGrid);
+   var resultHeader=new Label{Text="  PRODUKTET  ·  Prek kartën për ta shtuar",Dock=DockStyle.Top,Height=42,ForeColor=navy,Font=new Font("Segoe UI",10,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft,BackColor=Color.FromArgb(235,241,249)};productsPanel.Controls.Add(resultHeader);resultHeader.BringToFront();
+   productTiles=new FlowLayoutPanel{Dock=DockStyle.Fill,AutoScroll=true,WrapContents=true,BackColor=Color.White,Padding=new Padding(8),Margin=Padding.Empty};productsPanel.Controls.Add(productTiles);productTiles.BringToFront();resultHeader.BringToFront();productTiles.SizeChanged+=(s,e)=>RenderProductTiles();
+   basketGrid=NewGrid();basketGrid.ReadOnly=false;basketGrid.DataSource=basket;basketGrid.Dock=DockStyle.Fill;basketPanel.Controls.Add(basketGrid);
    var basketHead=new Label{Text="  SHPORTA E SHITJES",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),BackColor=Color.White,TextAlign=ContentAlignment.MiddleLeft};basketPanel.Controls.Add(basketHead);basketHead.BringToFront();
    basketGrid.Columns["Id"].Visible=false;basketGrid.Columns["Barkodi"].Visible=false;basketGrid.Columns["DPT"].Visible=false;
    basketGrid.Columns["Kodi"].Visible=true;basketGrid.Columns["Kodi"].HeaderText="Kodi";basketGrid.Columns["Kodi"].Width=82;
@@ -168,12 +185,60 @@ namespace ProShitje13 {
    f6.Click+=(s,e)=>MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Nuk u regjistrua shitje.", "F6 · Ruaj",MessageBoxButtons.OK,MessageBoxIcon.Warning);
    f7.Click+=(s,e)=>MessageBox.Show("Printimi i faturës nuk është lidhur ende. Përdor AED TXT vetëm për testim të integrimit.", "F7 · Printo",MessageBoxButtons.OK,MessageBoxIcon.Information);
    touch.Controls.Add(f5,0,0);touch.Controls.Add(f6,1,0);touch.Controls.Add(f7,2,0);
+   // Dock order: invoice header remains visible, actions stay at the bottom, grid fills the space between.
+   basketHead.Dock=DockStyle.Top;basketHead.Height=40;
+   bottom.Dock=DockStyle.Bottom;bottom.Height=198;
+   basketGrid.Dock=DockStyle.Fill;
+   basketPanel.Controls.SetChildIndex(basketHead,0);
+   basketPanel.Controls.SetChildIndex(bottom,1);
+   basketPanel.Controls.SetChildIndex(basketGrid,2);
+
    searchBox.TextChanged+=(s,e)=>{searchTimer.Stop();searchTimer.Start();};
-   searchBox.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){string term=SearchTerm(searchBox);searchTimer.Stop();if(!String.IsNullOrWhiteSpace(term)){_=LoadProductsAsync(term);}e.SuppressKeyPress=true;}};
+   searchBox.KeyDown+=(s,e)=>{
+    if(e.KeyCode==Keys.Enter){string term=SearchTerm(searchBox);searchTimer.Stop();addFirstFilteredOnEnter=!String.IsNullOrWhiteSpace(term);if(!String.IsNullOrWhiteSpace(term)){_=LoadProductsAsync(term);}else AddSelectedProductTile();e.SuppressKeyPress=true;}
+    else if(e.KeyCode==Keys.Down||e.KeyCode==Keys.Right||e.KeyCode==Keys.Up||e.KeyCode==Keys.Left){if(productTiles!=null&&productTiles.Controls.Count>0){int delta=(e.KeyCode==Keys.Down||e.KeyCode==Keys.Right)?1:-1;selectedProductTile=(selectedProductTile+delta+productTiles.Controls.Count)%productTiles.Controls.Count;HighlightProductTile();e.SuppressKeyPress=true;}}
+   };
    productsGrid.DoubleClick+=(s,e)=>{AddSelectedProduct();searchBox.Focus();searchBox.SelectAll();};
    productsGrid.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){AddSelectedProduct();e.SuppressKeyPress=true;searchBox.Focus();searchBox.SelectAll();}};
    basket.ColumnChanged+=(s,e)=>UpdateTotal();basket.RowChanged+=(s,e)=>UpdateTotal();basket.RowDeleted+=(s,e)=>UpdateTotal();
    _=LoadProductsAsync("");
+  }
+  void RenderProductTiles(){
+   if(productTiles==null||productsGrid==null||productTiles.IsDisposed)return;
+   productTiles.SuspendLayout();productTiles.Controls.Clear();selectedProductTile=-1;
+   int tileWidth=Math.Max(210,(productTiles.ClientSize.Width-34)/2);
+   foreach(DataGridViewRow gr in productsGrid.Rows){
+    if(gr.IsNewRow||gr.DataBoundItem==null)continue;
+    var view=gr.DataBoundItem as DataRowView;if(view==null)continue;DataRow row=view.Row;
+    string code=Convert.ToString(row.Table.Columns.Contains("Kodi")?row["Kodi"]:"");
+    string unit=Convert.ToString(row.Table.Columns.Contains("Njësia e matjes")?row["Njësia e matjes"]:"");
+    string name=Convert.ToString(row.Table.Columns.Contains("Artikulli")?row["Artikulli"]:"");
+    decimal price=0;decimal.TryParse(Convert.ToString(row.Table.Columns.Contains("Cmimi i daljes")?row["Cmimi i daljes"]:"0"),out price);
+    var tile=new Panel{Width=tileWidth,Height=142,BackColor=Color.FromArgb(248,250,253),Margin=new Padding(5),Padding=new Padding(10),BorderStyle=BorderStyle.FixedSingle,Cursor=Cursors.Hand};
+    var codeLabel=new Label{Text="KODI: "+code+"   •   NJËSIA: "+unit,Left=8,Top=6,Width=tileWidth-24,Height=22,ForeColor=blue,Font=new Font("Segoe UI",8,FontStyle.Bold),AutoEllipsis=true};
+    var nameLabel=new Label{Text=name,Left=8,Top=29,Width=tileWidth-24,Height=43,ForeColor=navy,Font=new Font("Segoe UI",10,FontStyle.Bold),AutoEllipsis=true};
+    var priceLabel=new Label{Text=price.ToString("N2"),Left=8,Top=75,Width=tileWidth-75,Height=32,ForeColor=green,Font=new Font("Segoe UI",15,FontStyle.Bold)};
+    var add=Btn("+",blue);add.SetBounds(tileWidth-58,78,44,42);add.Font=new Font("Segoe UI",16,FontStyle.Bold);add.TabStop=false;
+    Action addAction=()=>{AddProductRow(row);status.Text="U shtua në faturë: "+name;searchBox?.Focus();};
+    add.Click+=(sender,args)=>addAction();
+    tile.Click+=(sender,args)=>{selectedProductTile=productTiles.Controls.IndexOf(tile);HighlightProductTile();addAction();};codeLabel.Click+=(sender,args)=>{selectedProductTile=productTiles.Controls.IndexOf(tile);HighlightProductTile();addAction();};nameLabel.Click+=(sender,args)=>{selectedProductTile=productTiles.Controls.IndexOf(tile);HighlightProductTile();addAction();};priceLabel.Click+=(sender,args)=>{selectedProductTile=productTiles.Controls.IndexOf(tile);HighlightProductTile();addAction();};
+    tile.Controls.Add(codeLabel);tile.Controls.Add(nameLabel);tile.Controls.Add(priceLabel);tile.Controls.Add(add);productTiles.Controls.Add(tile);
+   }
+   productTiles.ResumeLayout();
+  }
+  void HighlightProductTile(){
+   if(productTiles==null)return;
+   for(int i=0;i<productTiles.Controls.Count;i++){
+    var tile=productTiles.Controls[i];tile.BackColor=i==selectedProductTile?Color.FromArgb(218,233,253):Color.FromArgb(248,250,253);
+    tile.Invalidate();
+   }
+  }
+  void AddSelectedProductTile(){
+   if(productTiles==null||productTiles.Controls.Count==0)return;
+   if(selectedProductTile<0||selectedProductTile>=productTiles.Controls.Count)selectedProductTile=0;
+   var tile=productTiles.Controls[selectedProductTile];
+   var add=tile.Controls.OfType<Button>().FirstOrDefault();
+   if(add!=null)add.PerformClick();
   }
   void ConfigureProductColumns(){
    if(productsGrid==null||productsGrid.Columns.Count==0)return;
@@ -205,13 +270,15 @@ namespace ProShitje13 {
   void EditBasketValue(string column,string title){
    if(basketGrid.CurrentRow==null||!(basketGrid.CurrentRow.DataBoundItem is DataRowView view))return;
    decimal oldValue=Convert.ToDecimal(view.Row[column]);
-   using(var f=new Form{Text=title,Width=340,Height=210,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
-    var label=new Label{Text=title,Left=16,Top=16,Width=290,Height=26,Font=new Font("Segoe UI",11,FontStyle.Bold)};
-    var value=new TextBox{Left=16,Top=48,Width=290,Height=36,Font=new Font("Segoe UI",16),Text=oldValue.ToString(CultureInfo.CurrentCulture)};
-    var keypad=new TableLayoutPanel{Left=16,Top=88,Width=290,Height=48,ColumnCount=2};keypad.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));keypad.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-    var ok=Btn("Prano",green);var cancel=Btn("Anulo",Color.FromArgb(100,110,125));ok.Dock=DockStyle.Fill;cancel.Dock=DockStyle.Fill;keypad.Controls.Add(ok,0,0);keypad.Controls.Add(cancel,1,0);
+   using(var f=new Form{Text=title,Width=390,Height=430,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false}){
+    var label=new Label{Text=title,Left=16,Top=12,Width=340,Height=28,Font=new Font("Segoe UI",12,FontStyle.Bold)};
+    var value=new TextBox{Left=16,Top=45,Width=340,Height=42,Font=new Font("Segoe UI",18,FontStyle.Bold),Text=oldValue.ToString(CultureInfo.CurrentCulture),TextAlign=HorizontalAlignment.Right};
+    var keypad=new TableLayoutPanel{Left=16,Top=98,Width=340,Height=230,ColumnCount=3,RowCount=4};for(int i=0;i<3;i++)keypad.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));for(int i=0;i<4;i++)keypad.RowStyles.Add(new RowStyle(SizeType.Percent,25f));
+    string[,] keys={{"7","8","9"},{"4","5","6"},{"1","2","3"},{"⌫","0","."}};
+    for(int rr=0;rr<4;rr++)for(int cc=0;cc<3;cc++){string key=keys[rr,cc];var kb=Btn(key,Color.FromArgb(230,237,247));kb.ForeColor=navy;kb.Font=new Font("Segoe UI",15,FontStyle.Bold);kb.Dock=DockStyle.Fill;kb.Margin=new Padding(3);kb.Click+=(sender,args)=>{if(key=="⌫"){if(value.Text.Length>0)value.Text=value.Text.Substring(0,value.Text.Length-1);}else if(key=="."){if(!value.Text.Contains(".")&&!value.Text.Contains(","))value.Text+=CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;}else value.Text+=key;};keypad.Controls.Add(kb,cc,rr);}
+    var ok=Btn("PRANO",green);ok.SetBounds(16,338,164,42);var cancel=Btn("ANULO",Color.FromArgb(100,110,125));cancel.SetBounds(192,338,164,42);
     ok.Click+=(s,e)=>{decimal parsed;if(!Decimal.TryParse(value.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out parsed))Decimal.TryParse(value.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out parsed);if(parsed<=0){MessageBox.Show("Vlera duhet të jetë më e madhe se zero.");return;}view.Row[column]=parsed;UpdateTotal();f.DialogResult=DialogResult.OK;f.Close();};
-    cancel.Click+=(s,e)=>{f.DialogResult=DialogResult.Cancel;f.Close();};f.Controls.Add(label);f.Controls.Add(value);f.Controls.Add(keypad);f.AcceptButton=ok;f.CancelButton=cancel;f.Shown+=(s,e)=>{value.SelectAll();value.Focus();};f.ShowDialog(this);
+    cancel.Click+=(s,e)=>{f.DialogResult=DialogResult.Cancel;f.Close();};f.Controls.Add(label);f.Controls.Add(value);f.Controls.Add(keypad);f.Controls.Add(ok);f.Controls.Add(cancel);f.AcceptButton=ok;f.CancelButton=cancel;f.Shown+=(s,e)=>{value.SelectAll();value.Focus();};f.ShowDialog(this);
    }
   }
   void GenerateFiscalTxt(){

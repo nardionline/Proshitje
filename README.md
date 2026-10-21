@@ -46,3 +46,10 @@ Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. P
 - Shporta/fatura shfaq gjithashtu njësinë për çdo artikull.
 - Rreshtat janë më të lartë dhe emërtimi mund të shfaqet në dy rreshta.
 - Nuk ndryshohet struktura e MDB-së.
+
+
+## Rev. 11 – përmirësim i rrjedhës së arkës
+- Klikimi mbi kartën e produktit shton menjëherë artikullin; butoni i vogël + është alternativë.
+- Enter pas kërkimit shton rezultatin e parë të filtruar; barkodi/kodi unik shtohet si më parë.
+- Shigjetat majtas/djathtas/lart/poshtë lëvizin zgjedhjen në kartat e rezultateve; Enter nga dritarja (kur fusha e kërkimit nuk ka fokus) aktivizon kartën e zgjedhur.
+- Rregullohet rendi i docking të panelit të faturës për të lënë hapësirë të plotë për listën dhe kokën e kolonave.

@@ -10,3 +10,10 @@
 - U përditësua dokumentimi me funksionet që mungojnë ende për përdorim real.
 
 Ky paketim nuk është certifikuar me build në këtë mjedis (nuk disponohet MSBuild/.NET Framework). Build-i përfundimtar duhet konfirmuar në GitHub Actions dhe testuar në Windows me kopje rezervë të MDB-së.
+
+
+## Rev. 11 – Market POS navigation and invoice layout
+- Click anywhere on a product tile to add it immediately; the small plus button is optional.
+- Press Enter in search to add the first filtered result; exact barcode lookup remains quick.
+- Arrow keys move the highlight through product tiles; Enter with an empty search adds the selected tile.
+- Explicit docking order keeps the invoice header and bottom controls visible while the invoice grid fills the available area.
