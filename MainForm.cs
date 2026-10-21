@@ -1,240 +1,47 @@
 using System;
 using System.Data;
-using System.Data.OleDb;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
-
-namespace ProShitje13
-{
-    public sealed class MainForm : Form
-    {
-        private readonly TextBox txtDb = new TextBox();
-        private readonly TextBox txtPassword = new TextBox();
-        private readonly TextBox txtSearch = new TextBox();
-        private readonly ComboBox cmbRole = new ComboBox();
-        private readonly Button btnConnect = new Button();
-        private readonly Button btnSearch = new Button();
-        private readonly Button btnAdd = new Button();
-        private readonly Button btnRemove = new Button();
-        private readonly Button btnExport = new Button();
-        private readonly DataGridView gridProducts = new DataGridView();
-        private readonly DataGridView gridSale = new DataGridView();
-        private readonly Label lblStatus = new Label();
-        private readonly DataTable saleItems = new DataTable();
-        private OleDbConnection connection;
-
-        public MainForm()
-        {
-            Text = "ProShitje 1.3 - Prototip";
-            Width = 1120;
-            Height = 720;
-            StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(900, 600);
-
-            var top = new Panel { Dock = DockStyle.Top, Height = 100, Padding = new Padding(10) };
-            Controls.Add(top);
-
-            top.Controls.Add(new Label { Text = "Databaza MDB:", Left = 10, Top = 12, Width = 100 });
-            txtDb.SetBounds(115, 8, 440, 25);
-            txtDb.Text = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "marketdb.mdb");
-            top.Controls.Add(txtDb);
-
-            top.Controls.Add(new Label { Text = "Fjalëkalimi:", Left = 570, Top = 12, Width = 85 });
-            txtPassword.SetBounds(655, 8, 130, 25);
-            txtPassword.UseSystemPasswordChar = true;
-            top.Controls.Add(txtPassword);
-
-            top.Controls.Add(new Label { Text = "Roli:", Left = 800, Top = 12, Width = 35 });
-            cmbRole.SetBounds(835, 8, 150, 25);
-            cmbRole.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbRole.Items.AddRange(new object[] { "Administrator", "Shitës" });
-            cmbRole.SelectedIndex = 0;
-            top.Controls.Add(cmbRole);
-
-            btnConnect.Text = "Lidhu me MDB";
-            btnConnect.SetBounds(10, 48, 130, 30);
-            btnConnect.Click += (s, e) => ConnectDatabase();
-            top.Controls.Add(btnConnect);
-
-            btnSearch.Text = "Kërko";
-            btnSearch.SetBounds(155, 48, 90, 30);
-            btnSearch.Click += (s, e) => SearchProducts();
-            top.Controls.Add(btnSearch);
-
-            txtSearch.SetBounds(255, 50, 300, 25);
-            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) SearchProducts(); };
-            top.Controls.Add(txtSearch);
-
-            var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 620 };
-            Controls.Add(split);
-            split.BringToFront();
-
-            var left = new Panel { Dock = DockStyle.Fill };
-            split.Panel1.Controls.Add(left);
-            left.Controls.Add(new Label { Text = "Artikujt", Dock = DockStyle.Top, Height = 28, Font = new Font(Font, FontStyle.Bold) });
-            gridProducts.Dock = DockStyle.Fill;
-            gridProducts.ReadOnly = true;
-            gridProducts.AllowUserToAddRows = false;
-            gridProducts.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            gridProducts.MultiSelect = false;
-            gridProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-            left.Controls.Add(gridProducts);
-
-            var right = new Panel { Dock = DockStyle.Fill };
-            split.Panel2.Controls.Add(right);
-            right.Controls.Add(new Label { Text = "Fatura provizore (test)", Dock = DockStyle.Top, Height = 28, Font = new Font(Font, FontStyle.Bold) });
-            gridSale.Dock = DockStyle.Fill;
-            gridSale.ReadOnly = true;
-            gridSale.AllowUserToAddRows = false;
-            gridSale.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            right.Controls.Add(gridSale);
-
-            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 45, FlowDirection = FlowDirection.LeftToRight, Padding = new Padding(8) };
-            btnAdd.Text = "Shto artikull";
-            btnAdd.Click += (s, e) => AddSelectedProduct();
-            btnRemove.Text = "Hiq nga fatura";
-            btnRemove.Click += (s, e) => RemoveSelectedSaleItem();
-            btnExport.Text = "Gjenero AED TXT";
-            btnExport.Click += (s, e) => ExportAed();
-            bottom.Controls.AddRange(new Control[] { btnAdd, btnRemove, btnExport });
-            right.Controls.Add(bottom);
-
-            lblStatus.Dock = DockStyle.Bottom;
-            lblStatus.Height = 25;
-            lblStatus.TextAlign = ContentAlignment.MiddleLeft;
-            lblStatus.Padding = new Padding(8, 0, 0, 0);
-            Controls.Add(lblStatus);
-            lblStatus.BringToFront();
-
-            saleItems.Columns.Add("Artikulli", typeof(string));
-            saleItems.Columns.Add("Sasia", typeof(decimal));
-            saleItems.Columns.Add("Cmimi", typeof(decimal));
-            saleItems.Columns.Add("DPT", typeof(int));
-            gridSale.DataSource = saleItems;
-            txtPassword.Text = "";
-            lblStatus.Text = "Prototip: përdor kopje të MDB-së. Shitjet nuk ruhen ende në databazë.";
-        }
-
-        private void ConnectDatabase()
-        {
-            try
-            {
-                if (connection != null) connection.Dispose();
-                string dbPath = txtDb.Text.Trim();
-                if (!File.Exists(dbPath))
-                {
-                    MessageBox.Show("Nuk u gjet MDB: " + dbPath, "ProShitje 1.3");
-                    return;
-                }
-
-                string cs = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + dbPath + ";";
-                if (!string.IsNullOrEmpty(txtPassword.Text))
-                    cs += "Jet OLEDB:Database Password=" + txtPassword.Text + ";";
-
-                connection = new OleDbConnection(cs);
-                connection.Open();
-                lblStatus.Text = "Lidhja me MDB u hap me sukses.";
-                SearchProducts();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lidhja dështoi:\r\n" + ex.Message +
-                    "\r\nKontrollo Jet 4.0 32-bit, rrugën e MDB-së dhe fjalëkalimin.",
-                    "ProShitje 1.3 - Gabim");
-            }
-        }
-
-        private void SearchProducts()
-        {
-            if (connection == null || connection.State != ConnectionState.Open)
-            {
-                MessageBox.Show("Lidhu fillimisht me databazën.");
-                return;
-            }
-
-            try
-            {
-                string term = txtSearch.Text.Trim();
-                using (var cmd = new OleDbCommand(
-                    "SELECT TOP 500 [Id], [Kodi], [Barcodi], [Artikulli], [Cmimi i daljes], [Cmimihyrjes], [Sasia Stock] " +
-                    "FROM [Artikulli] WHERE [Artikulli] LIKE ? OR [Barcodi] LIKE ? ORDER BY [Artikulli]", connection))
-                {
-                    cmd.Parameters.Add("p1", OleDbType.VarWChar, 255).Value = "%" + term + "%";
-                    cmd.Parameters.Add("p2", OleDbType.VarWChar, 255).Value = "%" + term + "%";
-                    var dt = new DataTable();
-                    using (var da = new OleDbDataAdapter(cmd)) da.Fill(dt);
-                    gridProducts.DataSource = dt;
-                    lblStatus.Text = "Artikuj të gjetur: " + dt.Rows.Count;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Gabim gjatë leximit të artikujve:\r\n" + ex.Message,
-                    "ProShitje 1.3");
-            }
-        }
-
-        private void AddSelectedProduct()
-        {
-            if (gridProducts.CurrentRow == null) return;
-            var r = gridProducts.CurrentRow;
-            string name = Convert.ToString(r.Cells["Artikulli"].Value);
-            decimal price = ToDecimal(r.Cells["Cmimi i daljes"].Value);
-            int dpt = 0;
-            var row = saleItems.NewRow();
-            row["Artikulli"] = name;
-            row["Sasia"] = 1m;
-            row["Cmimi"] = price;
-            row["DPT"] = dpt;
-            saleItems.Rows.Add(row);
-        }
-
-        private void RemoveSelectedSaleItem()
-        {
-            if (gridSale.CurrentRow == null) return;
-            if (gridSale.CurrentRow.DataBoundItem is DataRowView view)
-                saleItems.Rows.Remove(view.Row);
-        }
-
-        private void ExportAed()
-        {
-            if (saleItems.Rows.Count == 0)
-            {
-                MessageBox.Show("Shto të paktën një artikull.");
-                return;
-            }
-
-            using (var sfd = new SaveFileDialog { Filter = "Text file (*.txt)|*.txt", FileName = "fatura.txt" })
-            {
-                if (sfd.ShowDialog() != DialogResult.OK) return;
-                var sb = new StringBuilder();
-                sb.AppendLine("CLEAR");
-                sb.AppendLine("KEY REG");
-                foreach (DataRow row in saleItems.Rows)
-                {
-                    string desc = Convert.ToString(row["Artikulli"]).Replace("'", "''");
-                    decimal qty = Convert.ToDecimal(row["Sasia"]);
-                    decimal price = Convert.ToDecimal(row["Cmimi"]);
-                    int dpt = Convert.ToInt32(row["DPT"]);
-                    sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
-                        "SALE DPT={0},qty={1},PRICE={2},DES='{3}'",
-                        dpt, qty, price, desc));
-                }
-                sb.AppendLine("SUBTOT");
-                sb.AppendLine("CLOSE TENDER=1");
-                File.WriteAllText(sfd.FileName, sb.ToString(), new UTF8Encoding(false));
-                MessageBox.Show("Skedari AED u krijua:\r\n" + sfd.FileName +
-                    "\r\nKontrolloje me programin fiskal para përdorimit real.");
-            }
-        }
-
-        private static decimal ToDecimal(object value)
-        {
-            if (value == null || value == DBNull.Value) return 0m;
-            return Convert.ToDecimal(value, CultureInfo.CurrentCulture);
-        }
-    }
+namespace ProShitje13 {
+ public class MainForm : Form {
+  readonly AppConfig cfg; readonly bool licensed; readonly DatabaseService db=new DatabaseService();
+  DataGridView products=new DataGridView(), sale=new DataGridView(); TextBox search=new TextBox(); Label status=new Label(), total=new Label();
+  DataTable basket=new DataTable(); Panel content=new Panel(); string role="Administrator";
+  public MainForm(AppConfig c,bool lic){cfg=c;licensed=lic;Text="ProShitje 1.3";WindowState=FormWindowState.Maximized;MinimumSize=new Size(1100,700);Font=new Font("Segoe UI",10);BackColor=Color.FromArgb(244,247,251);BuildShell();basket.Columns.Add("Artikulli",typeof(string));basket.Columns.Add("Sasia",typeof(decimal));basket.Columns.Add("Cmimi",typeof(decimal));basket.Columns.Add("DPT",typeof(int));sale.DataSource=basket;Shown+=(s,e)=>Connect();}
+  void BuildShell(){
+   var side=new Panel{Dock=DockStyle.Left,Width=220,BackColor=Color.FromArgb(22,35,58)};Controls.Add(side);
+   side.Controls.Add(new Label{Text="PROSHITJE",ForeColor=Color.White,Font=new Font("Segoe UI",18,FontStyle.Bold),Left=20,Top=24,AutoSize=true});
+   side.Controls.Add(new Label{Text="1.3  •  POS & MAGAZINË",ForeColor=Color.FromArgb(166,188,216),Left=22,Top=60,AutoSize=true});
+   string[] menus={"Dashboard","Shitje","Artikujt","Hyrje magazine","Dalje magazine","Klientët","Furnitorët","Faturat","Raporte","Skadencat","Konfigurimet"};
+   int y=110;foreach(var m in menus){var b=new Button{Text="   "+m,TextAlign=ContentAlignment.MiddleLeft,Left=12,Top=y,Width=196,Height=39,FlatStyle=FlatStyle.Flat,BackColor=side.BackColor,ForeColor=Color.FromArgb(230,237,247),Font=new Font("Segoe UI",10),Cursor=Cursors.Hand};b.FlatAppearance.BorderSize=0;b.Click+=(s,e)=>Navigate(m);side.Controls.Add(b);y+=43;}
+   var top=new Panel{Dock=DockStyle.Top,Height=72,BackColor=Color.White};Controls.Add(top);top.BringToFront();
+   top.Controls.Add(new Label{Text="Sistemi i menaxhimit të shitjeve",Left=24,Top=13,AutoSize=true,Font=new Font("Segoe UI",16,FontStyle.Bold),ForeColor=Color.FromArgb(28,42,64)});
+   top.Controls.Add(new Label{Text=(licensed?"Licencë aktive":"Mënyra e testimit")+"  •  "+cfg.DatabasePath,Left=26,Top=43,AutoSize=true,ForeColor=Color.Gray});
+   content.Dock=DockStyle.Fill;content.Padding=new Padding(24);Controls.Add(content);content.BringToFront();
+   status.Dock=DockStyle.Bottom;status.Height=28;status.BackColor=Color.White;status.Padding=new Padding(12,4,0,0);Controls.Add(status);status.BringToFront();
+   Navigate("Dashboard");
+  }
+  void Navigate(string page){content.Controls.Clear();if(page=="Shitje"){BuildSales();return;}if(page=="Artikujt"){BuildProducts();return;}
+   var title=new Label{Text=page,Font=new Font("Segoe UI",23,FontStyle.Bold),ForeColor=Color.FromArgb(28,42,64),Dock=DockStyle.Top,Height=50};content.Controls.Add(title);
+   if(page=="Dashboard"){var flow=new FlowLayoutPanel{Dock=DockStyle.Top,Height=150,Padding=new Padding(0,15,0,0)};content.Controls.Add(flow);foreach(var pair in new[]{new[]{"Artikujt","Kërko në databazë"},new[]{"Shitje","Hap arkën"},new[]{"Magazina","Hyrje / dalje"},new[]{"Raporte","Analiza dhe xhiro"}}){var card=new Panel{Width=220,Height=100,BackColor=Color.White,Margin=new Padding(0,0,16,0),Padding=new Padding(16)};card.Controls.Add(new Label{Text=pair[0],Font=new Font("Segoe UI",14,FontStyle.Bold),ForeColor=Color.FromArgb(35,57,85),Dock=DockStyle.Top,Height=30});card.Controls.Add(new Label{Text=pair[1],ForeColor=Color.Gray,Dock=DockStyle.Fill});flow.Controls.Add(card);}content.Controls.Add(new Label{Text="Gjendja e sistemit: "+(db.IsConnected?"Lidhur me databazën":"Pa lidhje me databazën")+"\r\n\r\nModulet e tjera aktivizohen me radhë pasi të verifikohen fushat dhe lidhjet e databazës.",Dock=DockStyle.Top,Height=100,Padding=new Padding(4,20,0,0),ForeColor=Color.FromArgb(65,80,100)});}
+   else content.Controls.Add(new Label{Text="Ky modul është planifikuar në strukturën e versionit të plotë. Funksionet që shkruajnë në databazë duhen implementuar dhe testuar kundrejt kopjes së MDB-së.",Dock=DockStyle.Top,Height=100,ForeColor=Color.FromArgb(80,95,115)});
+  }
+  void Connect(){try{db.Connect(cfg.DatabasePath,cfg.DatabasePassword);status.Text="Databaza u lidh me sukses.";}catch(Exception ex){status.Text="Gabim databaze: "+ex.Message;}}
+  DataGridView NewGrid(){return new DataGridView{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,MultiSelect=false,SelectionMode=DataGridViewSelectionMode.FullRowSelect,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill,BackgroundColor=Color.White,BorderStyle=BorderStyle.None,RowHeadersVisible=false,EnableHeadersVisualStyles=false,ColumnHeadersDefaultCellStyle={BackColor=Color.FromArgb(233,239,247),ForeColor=Color.FromArgb(35,50,72),Font=new Font("Segoe UI",9,FontStyle.Bold)},DefaultCellStyle={SelectionBackColor=Color.FromArgb(215,230,250),SelectionForeColor=Color.Black,Padding=new Padding(4)},RowTemplate={Height=30}};}
+  void BuildProducts(){var title=new Label{Text="Artikujt",Dock=DockStyle.Top,Height=48,Font=new Font("Segoe UI",22,FontStyle.Bold)};content.Controls.Add(title);var bar=new Panel{Dock=DockStyle.Top,Height=52};content.Controls.Add(bar);search.SetBounds(0,8,380,32);search.PlaceholderText="Kërko me emërtim ose barkod";bar.Controls.Add(search);var b=new Button{Text="Kërko",Left=390,Top=7,Width=100,Height=34};b.Click+=(s,e)=>LoadProducts();bar.Controls.Add(b);search.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter)LoadProducts();};products=NewGrid();content.Controls.Add(products);products.BringToFront();bar.BringToFront();title.BringToFront();LoadProducts();}
+  void LoadProducts(){try{products.DataSource=db.SearchProducts(search.Text.Trim());status.Text="Artikuj të shfaqur: "+products.Rows.Count;}catch(Exception ex){status.Text=ex.Message;}}
+  void BuildSales(){var title=new Label{Text="Shitje e shpejtë",Dock=DockStyle.Top,Height=48,Font=new Font("Segoe UI",22,FontStyle.Bold)};content.Controls.Add(title);var bar=new Panel{Dock=DockStyle.Top,Height=48};content.Controls.Add(bar);search.SetBounds(0,6,350,32);search.PlaceholderText="Barkod ose emërtim artikulli";bar.Controls.Add(search);var find=new Button{Text="Kërko",Left=360,Top=5,Width=90,Height=34};find.Click+=(s,e)=>{Navigate("Shitje");};bar.Controls.Add(find);
+   var split=new SplitContainer{Dock=DockStyle.Fill,SplitterDistance=580,BackColor=Color.FromArgb(244,247,251)};content.Controls.Add(split);products=NewGrid();split.Panel1.Controls.Add(products);sale=NewGrid();sale.DataSource=basket;split.Panel2.Controls.Add(sale);
+   var bottom=new Panel{Dock=DockStyle.Bottom,Height=90,BackColor=Color.White};split.Panel2.Controls.Add(bottom);var add=new Button{Text="Shto artikull",Left=12,Top=10,Width=130,Height=36};add.Click+=(s,e)=>AddItem();bottom.Controls.Add(add);var remove=new Button{Text="Hiq",Left=150,Top=10,Width=80,Height=36};remove.Click+=(s,e)=>{if(sale.CurrentRow!=null&&sale.CurrentRow.DataBoundItem is DataRowView v)basket.Rows.Remove(v.Row);UpdateTotal();};bottom.Controls.Add(remove);var export=new Button{Text="Gjenero AED TXT",Left=12,Top=49,Width=180,Height=32};export.Click+=(s,e)=>ExportAed();bottom.Controls.Add(export);total=new Label{Text="TOTAL: 0.00",Left=245,Top=14,Width=250,Height=30,Font=new Font("Segoe UI",16,FontStyle.Bold),ForeColor=Color.FromArgb(15,120,90)};bottom.Controls.Add(total);
+   try{products.DataSource=db.SearchProducts("");}catch{};products.DoubleClick+=(s,e)=>AddItem();search.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){try{products.DataSource=db.SearchProducts(search.Text.Trim());if(products.Rows.Count>0)AddItem();}catch{}}};
+  }
+  void AddItem(){if(products.CurrentRow==null)return;var r=products.CurrentRow;var row=basket.NewRow();row["Artikulli"]=Convert.ToString(r.Cells["Artikulli"].Value);row["Sasia"]=1m;row["Cmimi"]=Dec(r.Cells["Cmimi i daljes"].Value);row["DPT"]=0;basket.Rows.Add(row);UpdateTotal();}
+  void UpdateTotal(){decimal t=0;foreach(DataRow r in basket.Rows)t+=Dec(r["Sasia"])*Dec(r["Cmimi"]);total.Text="TOTAL: "+t.ToString("N2");}
+  decimal Dec(object v){if(v==null||v==DBNull.Value)return 0;return Convert.ToDecimal(v,CultureInfo.CurrentCulture);}
+  void ExportAed(){if(basket.Rows.Count==0){MessageBox.Show("Shporta është bosh.");return;}using(var sfd=new SaveFileDialog{Filter="AED TXT (*.txt)|*.txt",FileName="fatura.txt"})if(sfd.ShowDialog()==DialogResult.OK){var sb=new StringBuilder("CLEAR\r\nKEY REG\r\n\r\n");foreach(DataRow r in basket.Rows)sb.AppendLine(string.Format(CultureInfo.InvariantCulture,"SALE DPT={0},qty={1},PRICE={2},DES='{3}'",r["DPT"],Dec(r["Sasia"]),Dec(r["Cmimi"]),Convert.ToString(r["Artikulli"]).Replace("'","''")));sb.AppendLine("SUBTOT");sb.AppendLine("CLOSE TENDER=1");File.WriteAllText(sfd.FileName,sb.ToString(),new UTF8Encoding(false));MessageBox.Show("TXT u krijua. Kontrolloje me AED; kjo nuk regjistron ende shitjen në MDB.");}}
+  protected override void OnFormClosed(FormClosedEventArgs e){db.Dispose();base.OnFormClosed(e);}
+ }
 }
