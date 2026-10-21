@@ -1,55 +1,32 @@
-# ProShitje 1.3 — Windows x86
+# ProShitje 2.0 — WPF Prototype
 
-Ky është një version i avancuar i ndërfaqes dhe bazës së projektit për Windows Forms / .NET Framework 4.8, i projektuar për MDB Access 2003 me Jet OLEDB 4.0.
+Projekt i ri WPF për Windows, i synuar për .NET Framework 4.8 x86 dhe Access 2003 (Jet OLEDB 4.0). Ky është prototipi i parë funksional i ndërfaqes; nuk është ende version prodhimi.
 
-## Përfshihet në këtë version
-- Ndërfaqe me menu anësore, dashboard dhe pamje të unifikuara.
-- Konfigurim i databazës `.mdb`, fjalëkalim, testim lidhjeje dhe ruajtje në profilin lokal të Windows.
-- Kërkim artikujsh sipas emërtimit, barkodit dhe kodit; kërkimi bëhet në sfond.
-- Shportë provizore shitjeje dhe eksport i përmbajtjes në AED TXT.
-- Pamje informative vetëm-lexim për klientët, furnitorët, faturat, hyrjet/daljet dhe artikujt me datë skadence.
-- Workflow GitHub Actions për build x86 dhe paketim ZIP.
+## Përfshihet
+- Ndërfaqe WPF modernizuar, menu anësore dhe panel produktesh.
+- Kartat e artikujve shfaqin emërtimin, barkodin, njësinë dhe çmimin.
+- Fatura përfshin kolonat Artikulli, Njësia, Sasia, Çmimi dhe Totali.
+- Kërkim në MDB në sfond, me debounce; modalitet demo kur MDB nuk është konfiguruar.
+- Cilësime për rrugën e MDB-së, fjalëkalimin dhe dosjen e TXT fiskal.
+- F5 krijon TXT sipas modelit AED të diskutuar; F6 ruan një draft CSV lokal; F7 hap dialogun e printimit.
+- GitHub Actions ndërton paketën Windows x86.
 
-## Kufizime që duhen zgjidhur para përdorimit real
-- Shitja nuk ruhet ende në tabelat `Fature Hyrje-Dalje` dhe `Hyrje-Dalje`; pagesa nuk regjistrohet.
-- Eksporti AED TXT është vetëm gjenerim skedari dhe duhet provuar me pajisjen/protokollin real.
-- Pamjet e listave janë vetëm-lexim; formularët e krijimit/redaktimit dhe lëvizjet e magazinës nuk janë aktivizuar.
-- Licencimi vjetor dhe gjenerimi i serialeve nuk janë implementuar si mekanizëm sigurie. Mos e trajtoni butonin e testimit si licencë komerciale.
-- Dashboard-i është vizual; treguesit financiarë nuk duhen konsideruar raporte të verifikuara.
-- Konfigurimi ruan aktualisht fjalëkalimin e MDB në XML lokal. Për publikim komercial duhet mbrojtur/kriptografuar.
+## E rëndësishme — kufijtë e këtij prototipi
+- F6 ruan vetëm një draft CSV testues në `%LOCALAPPDATA%\ProShitje\Drafts`; nuk shkruan ende në tabelat e faturave të Access-it.
+- F5 konfirmon vetëm krijimin e skedarit TXT, jo pranimin nga pajisja fiskale.
+- F7 përdor dialogun standard të printimit të Windows; printimi termik/fiskal duhet testuar me pajisjen reale.
+- Të dhënat demo dhe çmimet demo janë ilustrative. Kur MDB është zgjedhur, katalogu lexohet nga tabela `Artikulli` dhe njësia merret nga fusha `[Njësia e matjes]`.
+- Para përdorimit real duhet verifikuar skema e plotë e MDB-së, ruajtja e faturës, llogaritja e TVSH-së/zbritjeve, anulimet, numërimi i faturave dhe integrimi fiskal.
+- Access MDB nuk rekomandohet si databazë e përbashkët afatgjatë për shumë kasa. Arkitektura duhet të migrojë më vonë në databazë serveri/API.
 
-## Build në GitHub
-1. Ngarko përmbajtjen e ZIP-it në rrënjën e repository-t (ku ndodhet `ProShitje13.csproj`).
-2. Commit/push në `main` ose `master`, ose nis workflow manualisht te Actions.
-3. Shkarko artifact-in `ProShitje13-Windows-x86`.
-4. Provoje në Windows me Jet OLEDB 4.0 dhe një kopje rezervë të MDB-së.
+## Si testohet
+1. Hap Cilësime → zgjidh kopjen testuese të MDB-së.
+2. Kliko **Testo MDB** dhe ruaj cilësimet.
+3. Kërko artikuj; kartat duhet të lexojnë emërtimin, barkodin, njësinë, çmimin dhe stokun nga Access.
+4. Kliko një kartë për ta shtuar në faturë. Njësia shfaqet në kolonën e faturës.
+5. Testo F5, F6 dhe F7 vetëm me të dhëna prove.
 
-## Siguria e të dhënave
-Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. Përpara çdo implementimi që regjistron fatura ose lëvizje, krijo kopje rezervë dhe verifiko lidhjet/master-detail në MDB-në reale. Fushat ekzistuese nuk duhet të fshihen, riemërtohen ose të ndryshohet tipi i tyre pa miratim.
+## Build
+GitHub Actions → `Build ProShitje WPF x86` → shkarko artifact `ProShitjeWpf-Windows-x86`.
 
-
-## Ndryshime në ekranin e arkës
-- Fusha e kërkimit është më e gjerë dhe tregon qartë përdorimin me skaner/ENTER.
-- Shporta ka kolona të lexueshme, lartësi më të madhe rreshtash dhe total të dukshëm.
-- Janë shtuar butona të mëdhenj për F5 Fiskale, F6 Ruaj dhe F7 Printo, të përshtatshëm për touchscreen.
-- Tastet F5/F6/F7 dhe butonat shfaqin qartë kur integrimi real nuk është konfiguruar. Nuk simulohet një fiskalizim, ruajtje apo printim i suksesshëm.
-- Ky është ende version për testim të ndërfaqes: ruajtja e faturës në MDB dhe printimi/fiskalizimi real duhen implementuar e verifikuar para përdorimit në shitje.
-
-
-### Fix revizion 5
-- U hoq plotësisht `SplitContainer` nga ekrani i shitjes, sepse ai po shkaktonte përjashtimin `SplitterDistance` gjatë inicializimit.
-- Lista e artikujve dhe shporta tani organizohen me `TableLayoutPanel` me përqindje 53/47, pa `SplitterDistance` dhe pa madhësi minimale të paneleve.
-
-
-## Njësitë e matjes në Market POS
-- Lista e produkteve shfaq njësinë nga fusha ekzistuese `Njësia e matjes`.
-- Shporta/fatura shfaq gjithashtu njësinë për çdo artikull.
-- Rreshtat janë më të lartë dhe emërtimi mund të shfaqet në dy rreshta.
-- Nuk ndryshohet struktura e MDB-së.
-
-
-## Rev. 11 – përmirësim i rrjedhës së arkës
-- Klikimi mbi kartën e produktit shton menjëherë artikullin; butoni i vogël + është alternativë.
-- Enter pas kërkimit shton rezultatin e parë të filtruar; barkodi/kodi unik shtohet si më parë.
-- Shigjetat majtas/djathtas/lart/poshtë lëvizin zgjedhjen në kartat e rezultateve; Enter nga dritarja (kur fusha e kërkimit nuk ka fokus) aktivizon kartën e zgjedhur.
-- Rregullohet rendi i docking të panelit të faturës për të lënë hapësirë të plotë për listën dhe kokën e kolonave.
+Përdorimi i MDB-së kërkon Windows x86/Jet OLEDB 4.0 të instaluar. Nuk është verifikuar build-i në këtë mjedis; build-i real kryhet nga GitHub Actions në Windows.
