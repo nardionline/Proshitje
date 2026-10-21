@@ -39,3 +39,10 @@ Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. P
 ### Fix revizion 5
 - U hoq plotësisht `SplitContainer` nga ekrani i shitjes, sepse ai po shkaktonte përjashtimin `SplitterDistance` gjatë inicializimit.
 - Lista e artikujve dhe shporta tani organizohen me `TableLayoutPanel` me përqindje 53/47, pa `SplitterDistance` dhe pa madhësi minimale të paneleve.
+
+
+## Njësitë e matjes në Market POS
+- Lista e produkteve shfaq njësinë nga fusha ekzistuese `Njësia e matjes`.
+- Shporta/fatura shfaq gjithashtu njësinë për çdo artikull.
+- Rreshtat janë më të lartë dhe emërtimi mund të shfaqet në dy rreshta.
+- Nuk ndryshohet struktura e MDB-së.

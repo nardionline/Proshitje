@@ -16,7 +16,7 @@ namespace ProShitje13 {
   public MainForm(AppConfig c,bool lic) {
    cfg=c; licensed=lic; Text="ProShitje 1.3"; WindowState=FormWindowState.Maximized; MinimumSize=new Size(1000,650); Font=new Font("Segoe UI",10); BackColor=bg; KeyPreview=true;
    KeyDown+=(s,e)=>{ if(e.KeyCode==Keys.F5){ e.SuppressKeyPress=true; GenerateFiscalTxt(); } else if(e.KeyCode==Keys.F6){e.SuppressKeyPress=true; MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Kjo shmang regjistrimin e një shitjeje të paplotë.", "F6 · Ruaj", MessageBoxButtons.OK, MessageBoxIcon.Warning);} else if(e.KeyCode==Keys.F7){e.SuppressKeyPress=true; MessageBox.Show("Printimi i faturës së shitjes nuk është lidhur ende. Eksporti AED TXT është funksion i veçantë.", "F7 · Printo", MessageBoxButtons.OK, MessageBoxIcon.Information);}};
-   basket=new DataTable(); basket.Columns.Add("Id",typeof(int)); basket.Columns.Add("Kodi",typeof(string)); basket.Columns.Add("Barkodi",typeof(string)); basket.Columns.Add("Artikulli",typeof(string)); basket.Columns.Add("Sasia",typeof(decimal)); basket.Columns.Add("Cmimi",typeof(decimal)); basket.Columns.Add("DPT",typeof(int)); basket.Columns.Add("Totali",typeof(decimal), "Sasia * Cmimi");
+   basket=new DataTable(); basket.Columns.Add("Id",typeof(int)); basket.Columns.Add("Kodi",typeof(string)); basket.Columns.Add("Barkodi",typeof(string)); basket.Columns.Add("Artikulli",typeof(string)); basket.Columns.Add("Njësia",typeof(string)); basket.Columns.Add("Sasia",typeof(decimal)); basket.Columns.Add("Cmimi",typeof(decimal)); basket.Columns.Add("DPT",typeof(int)); basket.Columns.Add("Totali",typeof(decimal), "Sasia * Cmimi");
    searchTimer=new Timer{Interval=250}; searchTimer.Tick+=(s,e)=>{searchTimer.Stop(); _=LoadProductsAsync(searchBox==null?"":searchBox.Text);};
    BuildShell(); Shown+=(s,e)=>Connect();
   }
@@ -139,7 +139,7 @@ namespace ProShitje13 {
    var productsPanel=new Panel{Dock=DockStyle.Fill,BackColor=bg,Padding=new Padding(0,0,6,0)};
    var basketPanel=new Panel{Dock=DockStyle.Fill,BackColor=bg,Padding=new Padding(6,0,0,0)};
    salesLayout.Controls.Add(productsPanel,0,0);salesLayout.Controls.Add(basketPanel,1,0);content.Controls.Add(salesLayout);salesLayout.BringToFront();tools.BringToFront();
-   productsGrid=NewGrid();productsGrid.DataBindingComplete+=(s,e)=>ConfigureProductColumns();productsPanel.Controls.Add(productsGrid);
+   productsGrid=NewGrid();productsGrid.DataBindingComplete+=(s,e)=>ConfigureProductColumns();productsGrid.CellContentClick+=(s,e)=>{if(e.RowIndex>=0&&productsGrid.Columns[e.ColumnIndex] is DataGridViewButtonColumn)AddProductFromGridRow(e.RowIndex);};productsPanel.Controls.Add(productsGrid);
    var resultHeader=new Label{Text="  ARTIKUJT E GJETUR  ·  Dy klikime ose ENTER për shtim",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft,BackColor=Color.White};productsPanel.Controls.Add(resultHeader);resultHeader.BringToFront();
    basketGrid=NewGrid();basketGrid.ReadOnly=false;basketGrid.DataSource=basket;basketPanel.Controls.Add(basketGrid);
    var basketHead=new Label{Text="  SHPORTA E SHITJES",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),BackColor=Color.White,TextAlign=ContentAlignment.MiddleLeft};basketPanel.Controls.Add(basketHead);basketHead.BringToFront();
@@ -147,11 +147,13 @@ namespace ProShitje13 {
    basketGrid.Columns["Kodi"].Visible=true;basketGrid.Columns["Kodi"].HeaderText="Kodi";basketGrid.Columns["Kodi"].Width=82;
    basketGrid.Columns["Artikulli"].HeaderText="Emërtimi";
    basketGrid.Columns["Artikulli"].AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill;
+   basketGrid.Columns["Njësia"].HeaderText="Njësia";basketGrid.Columns["Njësia"].Width=68;basketGrid.Columns["Njësia"].DefaultCellStyle.Alignment=DataGridViewContentAlignment.MiddleCenter;
    basketGrid.Columns["Sasia"].HeaderText="Sasia";basketGrid.Columns["Sasia"].Width=76;basketGrid.Columns["Cmimi"].HeaderText="Çmimi";basketGrid.Columns["Cmimi"].Width=90;basketGrid.Columns["Totali"].HeaderText="Totali";basketGrid.Columns["Totali"].Width=100;
    basketGrid.Columns["Sasia"].ReadOnly=true;basketGrid.Columns["Cmimi"].ReadOnly=true;basketGrid.Columns["Totali"].ReadOnly=true;
    basketGrid.CellDoubleClick+=(s,e)=>{if(e.RowIndex>=0){var col=basketGrid.Columns[e.ColumnIndex].Name;if(col=="Sasia")EditBasketValue("Sasia","Ndrysho sasinë");else if(col=="Cmimi")EditBasketValue("Cmimi","Ndrysho çmimin");}};
    basketGrid.CellFormatting+=(s,e)=>{if(e.RowIndex>=0&&(basketGrid.Columns[e.ColumnIndex].Name=="Sasia"||basketGrid.Columns[e.ColumnIndex].Name=="Cmimi"||basketGrid.Columns[e.ColumnIndex].Name=="Totali"))e.CellStyle.Format="N2";};
-   basketGrid.RowTemplate.Height=38; productsGrid.RowTemplate.Height=38;
+   basketGrid.Columns["Artikulli"].DefaultCellStyle.WrapMode=DataGridViewTriState.True;
+   basketGrid.RowTemplate.Height=52; productsGrid.RowTemplate.Height=52;
    var bottom=new Panel{Dock=DockStyle.Bottom,Height=202,BackColor=Color.White,Padding=new Padding(10)};basketPanel.Controls.Add(bottom);bottom.BringToFront();
    totalLabel=new Label{Text="TOTAL  0.00",Left=12,Top=8,Width=bottom.Width-24,Height=44,Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right,Font=new Font("Segoe UI",21,FontStyle.Bold),ForeColor=green,TextAlign=ContentAlignment.MiddleLeft};bottom.Controls.Add(totalLabel);
    int actionW=Math.Max(78,(bottom.ClientSize.Width-42)/4);
@@ -175,15 +177,18 @@ namespace ProShitje13 {
   }
   void ConfigureProductColumns(){
    if(productsGrid==null||productsGrid.Columns.Count==0)return;
-   foreach(DataGridViewColumn c in productsGrid.Columns)c.Visible=false;
-   string[] wanted={"Kodi","Artikulli","Cmimi i daljes","Cmimi","Barcodi","Sasia Stock"};
-   foreach(string n in wanted)if(productsGrid.Columns.Contains(n))productsGrid.Columns[n].Visible=true;
-   if(productsGrid.Columns.Contains("Kodi")){productsGrid.Columns["Kodi"].HeaderText="Kodi";productsGrid.Columns["Kodi"].Width=100;}
-   if(productsGrid.Columns.Contains("Artikulli")){productsGrid.Columns["Artikulli"].HeaderText="Emërtimi";productsGrid.Columns["Artikulli"].AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill;}
-   if(productsGrid.Columns.Contains("Cmimi i daljes")){productsGrid.Columns["Cmimi i daljes"].HeaderText="Çmimi";productsGrid.Columns["Cmimi i daljes"].Width=100;}
-   if(productsGrid.Columns.Contains("Cmimi")){productsGrid.Columns["Cmimi"].HeaderText="Çmimi";productsGrid.Columns["Cmimi"].Width=100;}
-   if(productsGrid.Columns.Contains("Barcodi")){productsGrid.Columns["Barcodi"].HeaderText="Barkodi";productsGrid.Columns["Barcodi"].Width=130;}
-   if(productsGrid.Columns.Contains("Sasia Stock")){productsGrid.Columns["Sasia Stock"].HeaderText="Gjendja";productsGrid.Columns["Sasia Stock"].Width=85;}
+   foreach(DataGridViewColumn c in productsGrid.Columns)c.Visible=true;
+   if(productsGrid.Columns.Contains("Id"))productsGrid.Columns["Id"].Visible=false;
+   if(productsGrid.Columns.Contains("Cmimihyrjes"))productsGrid.Columns["Cmimihyrjes"].Visible=false;
+   if(productsGrid.Columns.Contains("Kodi")){productsGrid.Columns["Kodi"].HeaderText="KODI";productsGrid.Columns["Kodi"].Width=90;productsGrid.Columns["Kodi"].DisplayIndex=0;}
+   if(productsGrid.Columns.Contains("Barcodi")){productsGrid.Columns["Barcodi"].HeaderText="BARKODI";productsGrid.Columns["Barcodi"].Width=120;productsGrid.Columns["Barcodi"].DisplayIndex=1;}
+   if(productsGrid.Columns.Contains("Artikulli")){productsGrid.Columns["Artikulli"].HeaderText="EMËRTIMI";productsGrid.Columns["Artikulli"].AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill;productsGrid.Columns["Artikulli"].MinimumWidth=130;productsGrid.Columns["Artikulli"].DisplayIndex=2;productsGrid.Columns["Artikulli"].DefaultCellStyle.WrapMode=DataGridViewTriState.True;}
+   if(productsGrid.Columns.Contains("Njësia e matjes")){productsGrid.Columns["Njësia e matjes"].HeaderText="NJËSIA";productsGrid.Columns["Njësia e matjes"].Width=75;productsGrid.Columns["Njësia e matjes"].DisplayIndex=3;}
+   if(productsGrid.Columns.Contains("Cmimi i daljes")){productsGrid.Columns["Cmimi i daljes"].HeaderText="ÇMIMI";productsGrid.Columns["Cmimi i daljes"].Width=92;productsGrid.Columns["Cmimi i daljes"].DefaultCellStyle.Format="N2";productsGrid.Columns["Cmimi i daljes"].DefaultCellStyle.Alignment=DataGridViewContentAlignment.MiddleRight;productsGrid.Columns["Cmimi i daljes"].DisplayIndex=4;}
+   if(productsGrid.Columns.Contains("Sasia Stock")){productsGrid.Columns["Sasia Stock"].HeaderText="GJENDJA";productsGrid.Columns["Sasia Stock"].Width=75;productsGrid.Columns["Sasia Stock"].DisplayIndex=5;}
+   if(productsGrid.Columns.Contains("Cmimi"))productsGrid.Columns["Cmimi"].Visible=false;
+   if(!productsGrid.Columns.Contains("AddButton")){var add=new DataGridViewButtonColumn{Name="AddButton",HeaderText="",Text="+ SHTO",UseColumnTextForButtonValue=true,Width=82,FlatStyle=FlatStyle.Flat};add.DefaultCellStyle.BackColor=Color.FromArgb(225,241,235);add.DefaultCellStyle.ForeColor=Color.FromArgb(17,120,82);add.DefaultCellStyle.Font=new Font("Segoe UI",9,FontStyle.Bold);productsGrid.Columns.Add(add);}
+   productsGrid.Columns["AddButton"].DisplayIndex=productsGrid.Columns.Count-1;productsGrid.RowTemplate.Height=52;
   }
   void EditBasketValue(string column,string title){
    if(basketGrid.CurrentRow==null||!(basketGrid.CurrentRow.DataBoundItem is DataRowView view))return;
@@ -219,7 +224,7 @@ namespace ProShitje13 {
   void AddSelectedProduct(){if(productsGrid?.CurrentRow==null)return;try{if(productsGrid.CurrentRow.DataBoundItem is DataRowView v)AddProductRow(v.Row);}catch{}}
   void AddProductRow(DataRow r){
    int id=ToInt(r["Id"]);foreach(DataRow old in basket.Rows){if(ToInt(old["Id"])==id){old["Sasia"]=ToDec(old["Sasia"])+1;UpdateTotal();return;}}
-   DataRow row=basket.NewRow();row["Id"]=id;row["Kodi"]=Convert.ToString(r["Kodi"]);row["Barkodi"]=Convert.ToString(r["Barcodi"]);row["Artikulli"]=Convert.ToString(r["Artikulli"]);row["Sasia"]=1m;row["Cmimi"]=ToDec(r["Cmimi i daljes"]);row["DPT"]=0;basket.Rows.Add(row);UpdateTotal();
+   DataRow row=basket.NewRow();row["Id"]=id;row["Kodi"]=Convert.ToString(r["Kodi"]);row["Barkodi"]=Convert.ToString(r["Barcodi"]);row["Artikulli"]=Convert.ToString(r["Artikulli"]);row["Njësia"]=r.Table.Columns.Contains("Njësia e matjes")?Convert.ToString(r["Njësia e matjes"]):"";row["Sasia"]=1m;row["Cmimi"]=ToDec(r["Cmimi i daljes"]);row["DPT"]=0;basket.Rows.Add(row);UpdateTotal();
   }
   void UpdateTotal(){if(totalLabel==null||totalLabel.IsDisposed)return;decimal t=0;foreach(DataRow r in basket.Rows)t+=ToDec(r["Sasia"])*ToDec(r["Cmimi"]);totalLabel.Text="TOTAL  "+t.ToString("N2");}
   decimal ToDec(object v){if(v==null||v==DBNull.Value)return 0;decimal d;return Decimal.TryParse(Convert.ToString(v),NumberStyles.Any,CultureInfo.CurrentCulture,out d)?d:Convert.ToDecimal(v,CultureInfo.InvariantCulture);}

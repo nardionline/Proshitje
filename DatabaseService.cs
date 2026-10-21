@@ -21,7 +21,7 @@ namespace ProShitje13 {
   public static DataTable SearchProductsIndependent(string path,string password,string term) {
    using(var c=OpenConnection(path,password)) using(var cmd=new OleDbCommand()) {
     cmd.Connection=c;
-    string sql="SELECT TOP 500 [Id],[Kodi],[Barcodi],[Artikulli],[Cmimi i daljes],[Cmimihyrjes],[Sasia Stock] FROM [Artikulli]";
+    string sql="SELECT TOP 500 [Id],[Kodi],[Barcodi],[Artikulli],[Njësia e matjes],[Cmimi i daljes],[Cmimihyrjes],[Sasia Stock] FROM [Artikulli]";
     if(!String.IsNullOrWhiteSpace(term)) {
      sql += " WHERE [Artikulli] LIKE ? OR [Barcodi] LIKE ? OR [Kodi] LIKE ?";
      cmd.Parameters.Add("p1",OleDbType.VarWChar,255).Value="%"+term.Trim()+"%";
@@ -39,7 +39,7 @@ namespace ProShitje13 {
   }
   public DataTable SearchProducts(string term) {
    if(!IsConnected) throw new InvalidOperationException("Databaza nuk është lidhur.");
-   using(var cmd=new OleDbCommand("SELECT TOP 500 [Id],[Kodi],[Barcodi],[Artikulli],[Cmimi i daljes],[Cmimihyrjes],[Sasia Stock] FROM [Artikulli] WHERE [Artikulli] LIKE ? OR [Barcodi] LIKE ? OR [Kodi] LIKE ? ORDER BY [Artikulli]",connection)) {
+   using(var cmd=new OleDbCommand("SELECT TOP 500 [Id],[Kodi],[Barcodi],[Artikulli],[Njësia e matjes],[Cmimi i daljes],[Cmimihyrjes],[Sasia Stock] FROM [Artikulli] WHERE [Artikulli] LIKE ? OR [Barcodi] LIKE ? OR [Kodi] LIKE ? ORDER BY [Artikulli]",connection)) {
     string q="%"+(term??"")+"%";
     cmd.Parameters.Add("p1",OleDbType.VarWChar,255).Value=q; cmd.Parameters.Add("p2",OleDbType.VarWChar,255).Value=q; cmd.Parameters.Add("p3",OleDbType.VarWChar,255).Value=q;
     var dt=new DataTable(); using(var da=new OleDbDataAdapter(cmd)) da.Fill(dt); return dt;
