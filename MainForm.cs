@@ -14,7 +14,8 @@ namespace ProShitje13 {
   Panel content=new Panel(); Label status=new Label(); TextBox searchBox; DataGridView productsGrid, basketGrid; readonly System.Collections.Generic.Dictionary<string,Button> navButtons=new System.Collections.Generic.Dictionary<string,Button>(); Panel sidebar; Label pageTitle;
   DataTable basket; ComboBox customerCombo; Label totalLabel; Timer searchTimer; string currentPage="Dashboard"; bool searching=false; int searchRequestId=0;
   public MainForm(AppConfig c,bool lic) {
-   cfg=c; licensed=lic; Text="ProShitje 1.3"; WindowState=FormWindowState.Maximized; MinimumSize=new Size(1120,720); Font=new Font("Segoe UI",10); BackColor=bg;
+   cfg=c; licensed=lic; Text="ProShitje 1.3"; WindowState=FormWindowState.Maximized; MinimumSize=new Size(1000,650); Font=new Font("Segoe UI",10); BackColor=bg; KeyPreview=true;
+   KeyDown+=(s,e)=>{ if(e.KeyCode==Keys.F5){ e.SuppressKeyPress=true; MessageBox.Show("Integrimi fiskal nuk është konfiguruar ende. Duhet përcaktuar pajisja/protokolli fiskal përpara dërgimit.", "F5 · Fiskale", MessageBoxButtons.OK, MessageBoxIcon.Information); } else if(e.KeyCode==Keys.F6){e.SuppressKeyPress=true; MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Kjo shmang regjistrimin e një shitjeje të paplotë.", "F6 · Ruaj", MessageBoxButtons.OK, MessageBoxIcon.Warning);} else if(e.KeyCode==Keys.F7){e.SuppressKeyPress=true; MessageBox.Show("Printimi i faturës së shitjes nuk është lidhur ende. Eksporti AED TXT është funksion i veçantë.", "F7 · Printo", MessageBoxButtons.OK, MessageBoxIcon.Information);}
    basket=new DataTable(); basket.Columns.Add("Id",typeof(int)); basket.Columns.Add("Kodi",typeof(string)); basket.Columns.Add("Barkodi",typeof(string)); basket.Columns.Add("Artikulli",typeof(string)); basket.Columns.Add("Sasia",typeof(decimal)); basket.Columns.Add("Cmimi",typeof(decimal)); basket.Columns.Add("DPT",typeof(int)); basket.Columns.Add("Totali",typeof(decimal), "Sasia * Cmimi");
    searchTimer=new Timer{Interval=250}; searchTimer.Tick+=(s,e)=>{searchTimer.Stop(); _=LoadProductsAsync(searchBox==null?"":searchBox.Text);};
    BuildShell(); Shown+=(s,e)=>Connect();
@@ -120,29 +121,40 @@ namespace ProShitje13 {
    var warning=new Label{Text="Kujdes: ky modul nuk ndryshon strukturën e MDB-së. Mbaj gjithmonë kopje rezervë të databazës.",Left=22,Top=258,Width=700,Height=28,ForeColor=Color.FromArgb(170,95,35)};card.Controls.Add(warning);
   }
   void BuildSales(){
-   content.Controls.Add(Heading("Shitje e shpejtë"));
-   var tools=new Panel{Dock=DockStyle.Top,Height=102,BackColor=bg};content.Controls.Add(tools);
-   searchBox=SearchField("Skano barkodin ose shkruaj kod / emërtim...",520);searchBox.SetBounds(0,8,520,38);tools.Controls.Add(searchBox);
-   customerCombo=new ComboBox{Left=0,Top=55,Width=520,Height=32,DropDownStyle=ComboBoxStyle.DropDownList};
+   content.Controls.Add(Heading("Arka e shitjes"));
+   var tools=new Panel{Dock=DockStyle.Top,Height=116,BackColor=bg,Padding=new Padding(0,4,0,8)};content.Controls.Add(tools);
+   searchBox=SearchField("Skano barkodin ose kërko sipas emërtimit...",520);searchBox.SetBounds(0,8,Math.Max(360,content.ClientSize.Width-20),42);searchBox.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;tools.Controls.Add(searchBox);
+   var scanHint=new Label{Text="ENTER: kërko / shto artikull     •     F5 Fiskale     •     F6 Ruaj     •     F7 Printo",Left=2,Top=51,AutoSize=true,ForeColor=Color.FromArgb(90,105,125),Font=new Font("Segoe UI",9,FontStyle.Bold)};tools.Controls.Add(scanHint);
+   customerCombo=new ComboBox{Left=0,Top=76,Width=520,Height=32,DropDownStyle=ComboBoxStyle.DropDownList,Font=new Font("Segoe UI",10)};
    try{var clients=DatabaseService.ReadTable(cfg.DatabasePath,cfg.DatabasePassword,"SELECT [Id],[Emer Mbiemer] FROM [Klienti] ORDER BY [Emer Mbiemer]");var blank=clients.NewRow();blank["Id"]=-1;blank["Emer Mbiemer"]="Klient pa emër / shitje e zakonshme";clients.Rows.InsertAt(blank,0);customerCombo.DataSource=clients;customerCombo.DisplayMember="Emer Mbiemer";customerCombo.ValueMember="Id";}catch{customerCombo.Items.Add("Klient pa emër / shitje e zakonshme");customerCombo.SelectedIndex=0;}
    tools.Controls.Add(customerCombo);
-   var customerHint=new Label{Text="Përzgjedh klientin për faturë",Left=535,Top=62,AutoSize=true,ForeColor=Color.Gray};tools.Controls.Add(customerHint);
-   var split=new SplitContainer{Dock=DockStyle.Fill,SplitterDistance=600,BackColor=bg,BorderStyle=BorderStyle.None};content.Controls.Add(split);split.BringToFront();tools.BringToFront();
+   var customerHint=new Label{Text="Klienti i faturës",Left=535,Top=83,AutoSize=true,ForeColor=Color.FromArgb(90,105,125)};tools.Controls.Add(customerHint);
+   var split=new SplitContainer{Dock=DockStyle.Fill,SplitterDistance=600,BackColor=bg,BorderStyle=BorderStyle.None,Panel1MinSize=320,Panel2MinSize=380};content.Controls.Add(split);split.BringToFront();tools.BringToFront();
+   split.SizeChanged+=(s,e)=>{try{split.SplitterDistance=Math.Max(split.Panel1MinSize,Math.Min(split.ClientSize.Width- split.Panel2MinSize,(int)(split.ClientSize.Width*0.53)));}catch{}};
    productsGrid=NewGrid();split.Panel1.Controls.Add(productsGrid);
-   var resultHeader=new Label{Text="ARTIKUJT E GJETUR",Dock=DockStyle.Top,Height=32,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold)};split.Panel1.Controls.Add(resultHeader);resultHeader.BringToFront();
+   var resultHeader=new Label{Text="  ARTIKUJT E GJETUR  ·  Dy klikime ose ENTER për shtim",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft,BackColor=Color.White};split.Panel1.Controls.Add(resultHeader);resultHeader.BringToFront();
    basketGrid=NewGrid();basketGrid.ReadOnly=false;basketGrid.DataSource=basket;split.Panel2.Controls.Add(basketGrid);
-   var basketHead=new Label{Text="SHPORTA E SHITJES",Dock=DockStyle.Top,Height=32,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold)};split.Panel2.Controls.Add(basketHead);basketHead.BringToFront();
+   var basketHead=new Label{Text="  SHPORTA E SHITJES",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),BackColor=Color.White,TextAlign=ContentAlignment.MiddleLeft};split.Panel2.Controls.Add(basketHead);basketHead.BringToFront();
    basketGrid.Columns["Id"].Visible=false;basketGrid.Columns["Kodi"].Visible=false;basketGrid.Columns["Barkodi"].Visible=false;basketGrid.Columns["DPT"].Visible=false;
+   basketGrid.Columns["Artikulli"].AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill;
+   basketGrid.Columns["Sasia"].HeaderText="Sasia";basketGrid.Columns["Sasia"].Width=76;basketGrid.Columns["Cmimi"].HeaderText="Çmimi";basketGrid.Columns["Cmimi"].Width=90;basketGrid.Columns["Totali"].HeaderText="Totali";basketGrid.Columns["Totali"].Width=100;
    basketGrid.Columns["Sasia"].ReadOnly=false;basketGrid.Columns["Cmimi"].ReadOnly=false;basketGrid.Columns["Totali"].ReadOnly=true;
-   var bottom=new Panel{Dock=DockStyle.Bottom,Height=126,BackColor=Color.White};split.Panel2.Controls.Add(bottom);bottom.BringToFront();
-   totalLabel=new Label{Text="TOTAL  0.00",Left=12,Top=10,Width=360,Height=38,Font=new Font("Segoe UI",20,FontStyle.Bold),ForeColor=green};bottom.Controls.Add(totalLabel);
-   var remove=Btn("Hiq artikull",Color.FromArgb(100,110,125));remove.SetBounds(12,57,120,34);remove.Click+=(s,e)=>{if(basketGrid.CurrentRow!=null&&basketGrid.CurrentRow.DataBoundItem is DataRowView v)basket.Rows.Remove(v.Row);UpdateTotal();};bottom.Controls.Add(remove);
-   var export=Btn("Gjenero AED TXT",blue);export.SetBounds(142,57,165,34);export.Click+=(s,e)=>ExportAed();bottom.Controls.Add(export);
-   var pay=Btn("Mbyll testin",green);pay.SetBounds(317,57,160,34);pay.Click+=(s,e)=>MessageBox.Show("Shitja nuk është regjistruar. Ky version shërben për testimin e ndërfaqes dhe shportës; mos e përdor për shitje reale.","Vetëm test");bottom.Controls.Add(pay);
+   basketGrid.RowTemplate.Height=38; productsGrid.RowTemplate.Height=38;
+   var bottom=new Panel{Dock=DockStyle.Bottom,Height=202,BackColor=Color.White,Padding=new Padding(10)};split.Panel2.Controls.Add(bottom);bottom.BringToFront();
+   totalLabel=new Label{Text="TOTAL  0.00",Left=12,Top=8,Width=bottom.Width-24,Height=44,Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right,Font=new Font("Segoe UI",21,FontStyle.Bold),ForeColor=green,TextAlign=ContentAlignment.MiddleLeft};bottom.Controls.Add(totalLabel);
+   var remove=Btn("−  Hiq artikull",Color.FromArgb(100,110,125));remove.SetBounds(10,60,Math.Max(130,(bottom.ClientSize.Width-34)/2),42);remove.Anchor=AnchorStyles.Top|AnchorStyles.Left;remove.Font=new Font("Segoe UI",10,FontStyle.Bold);remove.Click+=(s,e)=>{if(basketGrid.CurrentRow!=null&&basketGrid.CurrentRow.DataBoundItem is DataRowView v)basket.Rows.Remove(v.Row);UpdateTotal();};bottom.Controls.Add(remove);
+   var export=Btn("AED TXT",blue);export.SetBounds(remove.Right+8,60,Math.Max(120,(bottom.ClientSize.Width-34)/2),42);export.Anchor=AnchorStyles.Top|AnchorStyles.Left;export.Font=new Font("Segoe UI",10,FontStyle.Bold);export.Click+=(s,e)=>ExportAed();bottom.Controls.Add(export);
+   var touch=new TableLayoutPanel{Left=10,Top=112,Width=Math.Max(300,bottom.ClientSize.Width-20),Height=72,Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right,ColumnCount=3,RowCount=1};touch.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));touch.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));touch.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.34f));bottom.Controls.Add(touch);
+   var f5=Btn("F5  FISKALE",Color.FromArgb(112,76,190));var f6=Btn("F6  RUAJ",Color.FromArgb(37,99,235));var f7=Btn("F7  PRINT",green);
+   foreach(var b in new[]{f5,f6,f7}){b.Dock=DockStyle.Fill;b.Margin=new Padding(3);b.Font=new Font("Segoe UI",10,FontStyle.Bold);b.Height=64;}
+   f5.Click+=(s,e)=>MessageBox.Show("Integrimi fiskal nuk është konfiguruar ende. Duhet përcaktuar pajisja/protokolli fiskal.", "F5 · Fiskale",MessageBoxButtons.OK,MessageBoxIcon.Information);
+   f6.Click+=(s,e)=>MessageBox.Show("Ruajtja reale e faturës në MDB nuk është aktivizuar ende. Nuk u regjistrua shitje.", "F6 · Ruaj",MessageBoxButtons.OK,MessageBoxIcon.Warning);
+   f7.Click+=(s,e)=>MessageBox.Show("Printimi i faturës nuk është lidhur ende. Përdor AED TXT vetëm për testim të integrimit.", "F7 · Printo",MessageBoxButtons.OK,MessageBoxIcon.Information);
+   touch.Controls.Add(f5,0,0);touch.Controls.Add(f6,1,0);touch.Controls.Add(f7,2,0);
    searchBox.TextChanged+=(s,e)=>{searchTimer.Stop();searchTimer.Start();};
    searchBox.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){string term=SearchTerm(searchBox);searchTimer.Stop();if(!String.IsNullOrWhiteSpace(term)){_=LoadProductsAsync(term);}e.SuppressKeyPress=true;}};
-   productsGrid.DoubleClick+=(s,e)=>AddSelectedProduct();
-   productsGrid.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){AddSelectedProduct();e.SuppressKeyPress=true;}};
+   productsGrid.DoubleClick+=(s,e)=>{AddSelectedProduct();searchBox.Focus();searchBox.SelectAll();};
+   productsGrid.KeyDown+=(s,e)=>{if(e.KeyCode==Keys.Enter){AddSelectedProduct();e.SuppressKeyPress=true;searchBox.Focus();searchBox.SelectAll();}};
    basket.ColumnChanged+=(s,e)=>UpdateTotal();basket.RowChanged+=(s,e)=>UpdateTotal();basket.RowDeleted+=(s,e)=>UpdateTotal();
    _=LoadProductsAsync("");
   }

@@ -26,3 +26,11 @@ Ky është një version i avancuar i ndërfaqes dhe bazës së projektit për Wi
 
 ## Siguria e të dhënave
 Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. Përpara çdo implementimi që regjistron fatura ose lëvizje, krijo kopje rezervë dhe verifiko lidhjet/master-detail në MDB-në reale. Fushat ekzistuese nuk duhet të fshihen, riemërtohen ose të ndryshohet tipi i tyre pa miratim.
+
+
+## Ndryshime në ekranin e arkës
+- Fusha e kërkimit është më e gjerë dhe tregon qartë përdorimin me skaner/ENTER.
+- Shporta ka kolona të lexueshme, lartësi më të madhe rreshtash dhe total të dukshëm.
+- Janë shtuar butona të mëdhenj për F5 Fiskale, F6 Ruaj dhe F7 Printo, të përshtatshëm për touchscreen.
+- Tastet F5/F6/F7 dhe butonat shfaqin qartë kur integrimi real nuk është konfiguruar. Nuk simulohet një fiskalizim, ruajtje apo printim i suksesshëm.
+- Ky është ende version për testim të ndërfaqes: ruajtja e faturës në MDB dhe printimi/fiskalizimi real duhen implementuar e verifikuar para përdorimit në shitje.
