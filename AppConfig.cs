@@ -6,6 +6,7 @@ namespace ProShitje13 {
   public string DatabasePath {get;set;} = "";
   public string DatabasePassword {get;set;} = "";
   public string LicenseSerial {get;set;} = "";
+  public string FiscalOutputPath {get;set;} = "";
   public string CompanyName {get;set;} = "ProShitje";
   public string LastRole {get;set;} = "Administrator";
   public static string ConfigPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ProShitje13","config.xml");
