@@ -1,0 +1,35 @@
+name: Build ProShitje 1.3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build application
+        shell: pwsh
+        run: |
+          dotnet build .\ProShitje13.csproj --configuration Release --verbosity minimal
+
+      - name: Package output
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\package | Out-Null
+          Copy-Item .\bin\Release\net48\* .\package\ -Recurse -Force
+          Copy-Item .\README.md .\package\README.txt -Force
+          Compress-Archive -Path .\package\* -DestinationPath .\ProShitje13-Windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProShitje13-Windows
+          path: ProShitje13-Windows.zip
