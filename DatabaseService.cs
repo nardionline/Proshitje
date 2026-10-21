@@ -22,6 +22,30 @@ namespace ProShitje13 {
     var dt=new DataTable(); using(var da=new OleDbDataAdapter(cmd)) da.Fill(dt); return dt;
    }
   }
+
+  public static DataTable SearchProductsIndependent(string path,string password,string term) {
+   if(!File.Exists(path)) throw new FileNotFoundException("Nuk u gjet skedari MDB.",path);
+   string cs="Provider=Microsoft.Jet.OLEDB.4.0;Data Source=\""+path.Replace("\"","")+"\";";
+   if(!String.IsNullOrEmpty(password)) cs+="Jet OLEDB:Database Password=\""+password.Replace("\"","")+"\";";
+   using(var cn=new OleDbConnection(cs)) {
+    cn.Open();
+    string sql="SELECT TOP 200 [Id],[Kodi],[Barcodi],[Artikulli],[Cmimi i daljes],[Cmimihyrjes],[Sasia Stock] FROM [Artikulli] ";
+    if(String.IsNullOrWhiteSpace(term)) sql+="ORDER BY [Artikulli]";
+    else sql+="WHERE [Barcodi]=? OR [Kodi]=? OR [Artikulli] LIKE ? OR [Barcodi] LIKE ? OR [Kodi] LIKE ? ORDER BY IIF([Barcodi]=?,0,IIF([Kodi]=?,1,2)), [Artikulli]";
+    using(var cmd=new OleDbCommand(sql,cn)) {
+     if(!String.IsNullOrWhiteSpace(term)) {
+      cmd.Parameters.Add("p1",OleDbType.VarWChar,255).Value=term;
+      cmd.Parameters.Add("p2",OleDbType.VarWChar,255).Value=term;
+      cmd.Parameters.Add("p3",OleDbType.VarWChar,255).Value="%"+term+"%";
+      cmd.Parameters.Add("p4",OleDbType.VarWChar,255).Value="%"+term+"%";
+      cmd.Parameters.Add("p5",OleDbType.VarWChar,255).Value="%"+term+"%";
+      cmd.Parameters.Add("p6",OleDbType.VarWChar,255).Value=term;
+      cmd.Parameters.Add("p7",OleDbType.VarWChar,255).Value=term;
+     }
+     var dt=new DataTable(); using(var da=new OleDbDataAdapter(cmd)) da.Fill(dt); return dt;
+    }
+   }
+  }
   public void Dispose() { if(connection!=null){connection.Dispose();connection=null;} }
  }
 }
