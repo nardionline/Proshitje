@@ -190,6 +190,18 @@ namespace ProShitje13 {
    if(!productsGrid.Columns.Contains("AddButton")){var add=new DataGridViewButtonColumn{Name="AddButton",HeaderText="",Text="+ SHTO",UseColumnTextForButtonValue=true,Width=82,FlatStyle=FlatStyle.Flat};add.DefaultCellStyle.BackColor=Color.FromArgb(225,241,235);add.DefaultCellStyle.ForeColor=Color.FromArgb(17,120,82);add.DefaultCellStyle.Font=new Font("Segoe UI",9,FontStyle.Bold);productsGrid.Columns.Add(add);}
    productsGrid.Columns["AddButton"].DisplayIndex=productsGrid.Columns.Count-1;productsGrid.RowTemplate.Height=52;
   }
+  void AddProductFromGridRow(int rowIndex){
+   try {
+    if(productsGrid==null || rowIndex<0 || rowIndex>=productsGrid.Rows.Count)return;
+    var view=productsGrid.Rows[rowIndex].DataBoundItem as DataRowView;
+    if(view==null)return;
+    AddProductRow(view.Row);
+    status.Text="U shtua në faturë: "+Convert.ToString(view.Row["Artikulli"]);
+    if(searchBox!=null){searchBox.Focus();searchBox.SelectAll();}
+   } catch(Exception ex) {
+    status.Text="Nuk u shtua artikulli: "+ex.Message;
+   }
+  }
   void EditBasketValue(string column,string title){
    if(basketGrid.CurrentRow==null||!(basketGrid.CurrentRow.DataBoundItem is DataRowView view))return;
    decimal oldValue=Convert.ToDecimal(view.Row[column]);
