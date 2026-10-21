@@ -24,14 +24,14 @@ namespace ProShitje13 {
    serial.SetBounds(360,133,320,34);serial.Text=cfg.LicenseSerial;panel.Controls.Add(serial);
    var note=new Label{Text="Konfigurimi ruhet te AppData\\Local\\ProShitje13\\config.xml. Mbaj një kopje rezervë të MDB-së para përdorimit.",Left=28,Top=190,Width=650,Height=55,ForeColor=Color.FromArgb(85,99,117)};panel.Controls.Add(note);
    var test=Btn("Testo databazën",Color.FromArgb(55,93,160));test.SetBounds(28,260,190,42);test.Click+=(s,e)=>TestDb();panel.Controls.Add(test);
-   var activate=Btn("Aktivizo dhe vazhdo",Color.FromArgb(15,145,105));activate.SetBounds(230,260,220,42);activate.Click+=(s,e)=>Activate();panel.Controls.Add(activate);
+   var activate=Btn("Aktivizo dhe vazhdo",Color.FromArgb(15,145,105));activate.SetBounds(230,260,220,42);activate.Click+=(s,e)=>ActivateLicense();panel.Controls.Add(activate);
    var open=Btn("Hap pa serial (test)",Color.FromArgb(100,110,125));open.SetBounds(462,260,218,42);open.Click+=(s,e)=>{cfg.DatabasePath=db.Text.Trim();cfg.DatabasePassword=pwd.Text;cfg.LicenseSerial=serial.Text.Trim();cfg.Save(); OpenMain(false);};panel.Controls.Add(open);
    status.SetBounds(28,330,650,70);status.ForeColor=Color.FromArgb(55,75,95);panel.Controls.Add(status);
   }
   void AddLabel(Control p,string t,int x,int y){p.Controls.Add(new Label{Text=t,Left=x,Top=y,AutoSize=true,ForeColor=Color.FromArgb(40,53,73),Font=new Font("Segoe UI",9,FontStyle.Bold)});}
   Button Btn(string t,Color c)=>new Button{Text=t,FlatStyle=FlatStyle.Flat,BackColor=c,ForeColor=Color.White,Font=new Font("Segoe UI",9,FontStyle.Bold),Cursor=Cursors.Hand};
   void TestDb(){try{using(var dbs=new DatabaseService())dbs.Connect(db.Text.Trim(),pwd.Text);status.Text="Lidhja u testua me sukses. U gjet tabela Artikulli.";status.ForeColor=Color.SeaGreen;}catch(Exception ex){status.Text="Lidhja dështoi: "+ex.Message;status.ForeColor=Color.Firebrick;}}
-  void Activate(){if(!LicenseService.Validate(serial.Text)){MessageBox.Show("Seriali nuk është i vlefshëm. Aktivizimi real kërkon serial të gjeneruar nga botuesi.","Aktivizimi");return;}cfg.LicenseSerial=serial.Text.Trim();cfg.DatabasePath=db.Text.Trim();cfg.DatabasePassword=pwd.Text;cfg.Save();OpenMain(true);}
+  void ActivateLicense(){if(!LicenseService.Validate(serial.Text)){MessageBox.Show("Seriali nuk është i vlefshëm. Aktivizimi real kërkon serial të gjeneruar nga botuesi.","Aktivizimi");return;}cfg.LicenseSerial=serial.Text.Trim();cfg.DatabasePath=db.Text.Trim();cfg.DatabasePassword=pwd.Text;cfg.Save();OpenMain(true);}
   void OpenMain(bool licensed){cfg.DatabasePath=db.Text.Trim();cfg.DatabasePassword=pwd.Text;cfg.LicenseSerial=serial.Text.Trim();cfg.Save();var f=new MainForm(cfg,licensed);Hide();f.FormClosed+=(s,e)=>Close();f.Show();}
  }
 }
