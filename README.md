@@ -1,26 +1,28 @@
-# ProShitje 1.3 — zhvillim mbi repository-n ekzistues
+# ProShitje 1.3 — Windows x86
 
-## Përmirësime në këtë paketë
-- Ndërfaqe Windows Forms me menu anësore dhe dashboard.
-- Kërkim artikujsh me vonesë të shkurtër pas shkrimit (debounce), pa kërkuar pas çdo tastiere; kërkon sipas barkodit, kodit dhe emërtimit.
-- Kërkimi kryhet në punë të veçantë (async-style) me lidhje të veçantë Access, që UI të mbetet më reagues.
-- Barkodi/kodi i saktë renditet përpara rezultateve të përafërta; në shitje, përputhja e vetme e saktë e barkodit shtohet automatikisht në shportë.
-- Ekran shitjeje me rezultate, shportë, klient (fusha UI për momentin), sasi, çmim, total dhe eksport AED TXT.
-- Konfigurim MDB i ruajtur në `%LOCALAPPDATA%\\ProShitje13\\config.xml`.
-- Workflow i GitHub Actions për build Windows x86 me NuGet restore.
+Ky është një version i avancuar i ndërfaqes dhe bazës së projektit për Windows Forms / .NET Framework 4.8, i projektuar për MDB Access 2003 me Jet OLEDB 4.0.
 
-## Kufizime që duhen ditur
-Ky është version zhvillimi, jo produkt i përfunduar për arkë reale.
-- Shitjet ende nuk ruhen në tabelat `[Fature Hyrje-Dalje]` dhe `[Hyrje-Dalje]`.
-- Lista e klientëve nuk është ende e lidhur me tabelën `Klienti`; zgjedhja e klientit është vetëm ndërfaqe fillestare.
-- Modulet e furnitorëve, hyrje/daljeve të magazinës, detyrimeve, recetave, skadencave dhe raporteve kërkojnë implementim.
-- Eksporti AED TXT nuk garanton se fatura është pranuar ose fiskalizuar.
-- Seriali vjetor offline nuk është ende licencim i sigurt; `LicenseService.cs` ka sekret demonstrues placeholder. Mos e përdor për shitje/licencim real.
-- Fjalëkalimi MDB ruhet aktualisht në konfigurim XML; para përdorimit real duhet ruajtje e mbrojtur me Windows DPAPI.
-- Kërkimi automatik varet nga emrat/fushat e raportuara në MDB; testo mbi kopje të databazës.
+## Përfshihet në këtë version
+- Ndërfaqe me menu anësore, dashboard dhe pamje të unifikuara.
+- Konfigurim i databazës `.mdb`, fjalëkalim, testim lidhjeje dhe ruajtje në profilin lokal të Windows.
+- Kërkim artikujsh sipas emërtimit, barkodit dhe kodit; kërkimi bëhet në sfond.
+- Shportë provizore shitjeje dhe eksport i përmbajtjes në AED TXT.
+- Pamje informative vetëm-lexim për klientët, furnitorët, faturat, hyrjet/daljet dhe artikujt me datë skadence.
+- Workflow GitHub Actions për build x86 dhe paketim ZIP.
 
-## Databaza
-Nuk fshihet dhe nuk riemërtohet asnjë fushë ekzistuese. Puno me kopje rezervë të `marketdb.mdb`. Jet OLEDB 4.0 kërkon proces 32-bit dhe driver-in përkatës në Windows.
+## Kufizime që duhen zgjidhur para përdorimit real
+- Shitja nuk ruhet ende në tabelat `Fature Hyrje-Dalje` dhe `Hyrje-Dalje`; pagesa nuk regjistrohet.
+- Eksporti AED TXT është vetëm gjenerim skedari dhe duhet provuar me pajisjen/protokollin real.
+- Pamjet e listave janë vetëm-lexim; formularët e krijimit/redaktimit dhe lëvizjet e magazinës nuk janë aktivizuar.
+- Licencimi vjetor dhe gjenerimi i serialeve nuk janë implementuar si mekanizëm sigurie. Mos e trajtoni butonin e testimit si licencë komerciale.
+- Dashboard-i është vizual; treguesit financiarë nuk duhen konsideruar raporte të verifikuara.
+- Konfigurimi ruan aktualisht fjalëkalimin e MDB në XML lokal. Për publikim komercial duhet mbrojtur/kriptografuar.
 
-## Build
-Ngarko skedarët në root të repository-t. GitHub Actions → `Build ProShitje 1.3` → `Run workflow`. Shkarko artifact `ProShitje13-Windows-x86`.
+## Build në GitHub
+1. Ngarko përmbajtjen e ZIP-it në rrënjën e repository-t (ku ndodhet `ProShitje13.csproj`).
+2. Commit/push në `main` ose `master`, ose nis workflow manualisht te Actions.
+3. Shkarko artifact-in `ProShitje13-Windows-x86`.
+4. Provoje në Windows me Jet OLEDB 4.0 dhe një kopje rezervë të MDB-së.
+
+## Siguria e të dhënave
+Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. Përpara çdo implementimi që regjistron fatura ose lëvizje, krijo kopje rezervë dhe verifiko lidhjet/master-detail në MDB-në reale. Fushat ekzistuese nuk duhet të fshihen, riemërtohen ose të ndryshohet tipi i tyre pa miratim.
