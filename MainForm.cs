@@ -130,7 +130,8 @@ namespace ProShitje13 {
    tools.Controls.Add(customerCombo);
    var customerHint=new Label{Text="Klienti i faturës",Left=535,Top=83,AutoSize=true,ForeColor=Color.FromArgb(90,105,125)};tools.Controls.Add(customerHint);
    var split=new SplitContainer{Dock=DockStyle.Fill,SplitterDistance=600,BackColor=bg,BorderStyle=BorderStyle.None,Panel1MinSize=320,Panel2MinSize=380};content.Controls.Add(split);split.BringToFront();tools.BringToFront();
-   split.SizeChanged+=(s,e)=>{try{split.SplitterDistance=Math.Max(split.Panel1MinSize,Math.Min(split.ClientSize.Width- split.Panel2MinSize,(int)(split.ClientSize.Width*0.53)));}catch{}};
+   split.SizeChanged+=(s,e)=>{try{if(split.Width>split.Panel1MinSize+split.Panel2MinSize+split.SplitterWidth){int max=split.ClientSize.Width-split.Panel2MinSize;int target=Math.Max(split.Panel1MinSize,Math.Min(max,(int)(split.ClientSize.Width*0.53)));if(target>=split.Panel1MinSize&&target<=max)split.SplitterDistance=target;}}catch(InvalidOperationException){/* Layout not ready yet; next resize will retry. */}};
+   split.HandleCreated+=(s,e)=>{try{BeginInvoke((Action)(()=>{if(!split.IsDisposed&&split.Width>split.Panel1MinSize+split.Panel2MinSize+split.SplitterWidth){int max=split.ClientSize.Width-split.Panel2MinSize;split.SplitterDistance=Math.Max(split.Panel1MinSize,Math.Min(max,(int)(split.ClientSize.Width*0.53)));}}));}catch{}};
    productsGrid=NewGrid();split.Panel1.Controls.Add(productsGrid);
    var resultHeader=new Label{Text="  ARTIKUJT E GJETUR  ·  Dy klikime ose ENTER për shtim",Dock=DockStyle.Top,Height=38,ForeColor=blue,Font=new Font("Segoe UI",9,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft,BackColor=Color.White};split.Panel1.Controls.Add(resultHeader);resultHeader.BringToFront();
    basketGrid=NewGrid();basketGrid.ReadOnly=false;basketGrid.DataSource=basket;split.Panel2.Controls.Add(basketGrid);
