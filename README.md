@@ -34,3 +34,8 @@ Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. P
 - Janë shtuar butona të mëdhenj për F5 Fiskale, F6 Ruaj dhe F7 Printo, të përshtatshëm për touchscreen.
 - Tastet F5/F6/F7 dhe butonat shfaqin qartë kur integrimi real nuk është konfiguruar. Nuk simulohet një fiskalizim, ruajtje apo printim i suksesshëm.
 - Ky është ende version për testim të ndërfaqes: ruajtja e faturës në MDB dhe printimi/fiskalizimi real duhen implementuar e verifikuar para përdorimit në shitje.
+
+
+### Fix revizion 5
+- U hoq plotësisht `SplitContainer` nga ekrani i shitjes, sepse ai po shkaktonte përjashtimin `SplitterDistance` gjatë inicializimit.
+- Lista e artikujve dhe shporta tani organizohen me `TableLayoutPanel` me përqindje 53/47, pa `SplitterDistance` dhe pa madhësi minimale të paneleve.
