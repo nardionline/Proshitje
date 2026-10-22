@@ -1,26 +1,15 @@
-name: Build ProShitje WPF x86
-on:
-  workflow_dispatch:
-  push:
-    branches: [main, master]
+name: Build ProShitje Licensing Starter
+on: {workflow_dispatch: {}, push: {branches: [main, master]}}
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-      - name: Build WPF .NET Framework 4.8 x86
+      - name: Build
+        shell: cmd
+        run: msbuild ProShitjeLicensing.csproj /p:Configuration=Release /p:Platform=AnyCPU /m /v:minimal
+      - name: Package
         shell: pwsh
-        run: msbuild .\ProShitje.Wpf.csproj /p:Configuration=Release /p:Platform=x86 /m /v:minimal
-      - name: Prepare package
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path package | Out-Null
-          Copy-Item .\bin\Release\* .\package\ -Recurse -Force
-          Copy-Item .\README.md .\package\README.md -Force
-          Compress-Archive -Path .\package\* -DestinationPath .\ProShitjeWpf-Windows-x86.zip -Force
+        run: Compress-Archive -Path bin/Release/* -DestinationPath ProShitjeLicensing-Release.zip -Force
       - uses: actions/upload-artifact@v4
-        with:
-          name: ProShitjeWpf-Windows-x86
-          path: ProShitjeWpf-Windows-x86.zip
+        with: {name: ProShitjeLicensing-Release, path: ProShitjeLicensing-Release.zip}

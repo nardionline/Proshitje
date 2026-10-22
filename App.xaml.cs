@@ -1,2 +1,1 @@
-using System.Windows;
-namespace ProShitje.Wpf { public partial class App : Application { } }
+using System.Windows; namespace ProShitjeLicensing { public partial class App : Application { } }
