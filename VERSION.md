@@ -1,8 +1,6 @@
-# ProShitje WPF
+# ProShitje WPF — Version 2.0.3
 
-Version: 2.0.2
-Base: uploaded Proshitje(1).zip
-Platform: WPF, .NET Framework 4.8, x86
-Status: source fix applied; Windows build/runtime not verified in this environment.
-
-Startup fix: UpdateTotals now waits until both SubtotalText and TotalText controls exist, preventing DiscountBox_TextChanged from dereferencing TotalText during XAML initialization.
+- Bazë: WPF, .NET Framework 4.8, x86.
+- Ndryshim i fokusuar: ndërveprimi i sasisë/çmimit në faturë dhe kontrollet fillestare të autorizimit.
+- Statusi i build-it: **I PAVERIFIKUAR** — kërkohet GitHub Actions.
+- Kufizim i njohur: çmimi i blerjes dhe marzhi nuk shfaqen ende, sepse fusha e çmimit të blerjes në MDB nuk është verifikuar. Autorizimi në këtë version ruhet në konfigurimin lokal të aplikacionit, jo si profil individual i ruajtur në databazë.

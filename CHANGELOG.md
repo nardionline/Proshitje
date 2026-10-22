@@ -8,7 +8,11 @@
 - No new sales, CRUD, or licensing functionality is claimed in this baseline.
 - Build status: NOT VERIFIED in this delivery; run GitHub Actions on GitHub.
 
-## 2.0.2
-- Fix startup NullReferenceException: guard both SubtotalText and TotalText in UpdateTotals during XAML initialization.
-- No database, invoice, or UI behavior changes intended.
-- Build/runtime not verified here; verify via GitHub Actions and run the generated EXE.
+
+## 2.0.3 — 2026-10-22
+- Sasia mund të shkruhet nga tastiera normale dhe të ndryshohet me tastierë numerike me touch.
+- Kontrollim i sasisë dhe rifreskim i totalit pas ndryshimit.
+- Ndryshimi i çmimit nga menuja me të djathtën është i mbyllur derisa të jepet autorizim me PIN.
+- U shtua dialog fillestar për autorizimin e ndryshimit të çmimit dhe lejen e shikimit të kostos/marzhit.
+- Çmimi i blerjes/marzhi nuk janë aktivizuar për shfaqje: fusha përkatëse e MDB duhet identifikuar përpara se të llogaritet fitimi.
+- Build-i nuk është verifikuar ende në Windows; kërkohet GitHub Actions.

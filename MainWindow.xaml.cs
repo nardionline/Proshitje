@@ -25,9 +25,13 @@ namespace ProShitje.Wpf {
   private string paymentType = "Cash";
   private int invoiceNumber = 125;
   private static readonly CultureInfo Sq = CultureInfo.GetCultureInfo("sq-AL");
+  private bool canEditPrice;
+  private bool canViewCostMargin;
 
   public MainWindow() {
    InitializeComponent(); DataContext=this;
+   canEditPrice = ConfigurationManager.AppSettings["CanEditPrice"] == "true";
+   canViewCostMargin = ConfigurationManager.AppSettings["CanViewCostMargin"] == "true";
    searchTimer=new DispatcherTimer { Interval=TimeSpan.FromMilliseconds(300) }; searchTimer.Tick+=async (s,e)=>{searchTimer.Stop();await LoadProductsAsync(SearchBox.Text);};
    InvoiceLines.CollectionChanged+=(s,e)=>{RenumberLines();UpdateTotals();};
    UpdateTotals();
@@ -103,7 +107,52 @@ namespace ProShitje.Wpf {
   private decimal Subtotal=>InvoiceLines.Sum(x=>x.LineTotal);
   private decimal DiscountPercent {get{decimal d;return decimal.TryParse(DiscountBox?.Text,out d)?Math.Max(0,Math.Min(100,d)):0;}}
   private decimal Total=>decimal.Round(Subtotal*(1-DiscountPercent/100m),2);
-  private void UpdateTotals(){if(SubtotalText==null||TotalText==null)return;SubtotalText.Text=Subtotal.ToString("N2",Sq)+" lekë";TotalText.Text=Total.ToString("N2",Sq)+" lekë";}
+  private void UpdateTotals(){
+   if(SubtotalText==null || TotalText==null || DiscountBox==null)return;
+   SubtotalText.Text=Subtotal.ToString("N2",Sq)+" lekë";
+   TotalText.Text=Total.ToString("N2",Sq)+" lekë";
+  }
+  private void QuantityBox_PreviewKeyDown(object sender,KeyEventArgs e) {
+   if(e.Key==Key.Enter){CommitQuantity(sender as TextBox);e.Handled=true;}
+   else if(e.Key==Key.Escape){InvoiceGrid.CancelEdit();InvoiceGrid.CancelEdit(DataGridEditingUnit.Cell);e.Handled=true;}
+  }
+  private void QuantityBox_LostFocus(object sender,RoutedEventArgs e){CommitQuantity(sender as TextBox);}
+  private void CommitQuantity(TextBox box){
+   if(box==null)return;
+   var line=box.DataContext as InvoiceLine;if(line==null)return;
+   decimal q;
+   if(decimal.TryParse(box.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out q) ||
+      decimal.TryParse(box.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out q)){
+    if(q>0 && q<=1000000) line.Quantity=q;
+    else {box.Text=line.Quantity.ToString("0.###",Sq);MessageBox.Show("Sasia duhet të jetë më e madhe se zero.","Sasia",MessageBoxButton.OK,MessageBoxImage.Warning);}
+   } else box.Text=line.Quantity.ToString("0.###",Sq);
+   UpdateTotals();
+  }
+  private void QuantityKeypad_Click(object sender,RoutedEventArgs e){
+   var b=sender as Button;var line=b?.DataContext as InvoiceLine;if(line==null)return;
+   var dlg=new TouchKeypadWindow("Ndrysho sasinë",line.Quantity.ToString("0.###",Sq),true){Owner=this};
+   if(dlg.ShowDialog()==true){decimal q;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out q)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out q)){if(q>0&&q<=1000000)line.Quantity=q;else MessageBox.Show("Sasia duhet të jetë më e madhe se zero.");}}
+   UpdateTotals();
+  }
+  private void PriceCell_MouseRightButtonUp(object sender,MouseButtonEventArgs e){
+   var t=sender as TextBlock;var line=t?.DataContext as InvoiceLine;if(line==null)return;
+   if(!canEditPrice){MessageBox.Show("Ndryshimi i çmimit kërkon autorizim. Përdor 'Të drejtat' për t'u autorizuar.","Të drejtat",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+   var dlg=new TouchKeypadWindow("Ndrysho çmimin",line.Price.ToString("0.00",Sq),true){Owner=this};
+   if(dlg.ShowDialog()==true){decimal p;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out p)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out p)){if(p>=0&&p<=100000000)line.Price=p;else MessageBox.Show("Çmimi nuk është i vlefshëm.");}}
+   UpdateTotals();InvoiceGrid.Items.Refresh();
+  }
+  private void Permissions_Click(object sender,RoutedEventArgs e){
+   var dlg=new PermissionsWindow(canEditPrice,canViewCostMargin){Owner=this};
+   if(dlg.ShowDialog()==true){canEditPrice=dlg.CanEditPrice;canViewCostMargin=dlg.CanViewCostMargin;SavePermissionSettings();}
+  }
+  private void SavePermissionSettings(){
+   try{var config=ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+    SetAppSetting(config,"CanEditPrice",canEditPrice?"true":"false");
+    SetAppSetting(config,"CanViewCostMargin",canViewCostMargin?"true":"false");
+    config.Save(ConfigurationSaveMode.Modified);ConfigurationManager.RefreshSection("appSettings");
+   }catch(Exception ex){MessageBox.Show("Të drejtat u ndryshuan vetëm për këtë sesion. Nuk u ruajtën në konfigurim: "+ex.Message,"Të drejtat",MessageBoxButton.OK,MessageBoxImage.Warning);}
+  }
+  private void SetAppSetting(Configuration c,string key,string value){if(c.AppSettings.Settings[key]==null)c.AppSettings.Settings.Add(key,value);else c.AppSettings.Settings[key].Value=value;}
   private void DiscountBox_TextChanged(object sender,TextChangedEventArgs e){UpdateTotals();}
   private void ClearInvoice_Click(object sender,RoutedEventArgs e){if(InvoiceLines.Count>0&&MessageBox.Show("Të pastrohet fatura aktuale?","ProShitje",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes)return;InvoiceLines.Clear();UpdateTotals();}
   private void RemoveLine_Click(object sender,RoutedEventArgs e){var b=sender as Button;var line=b?.DataContext as InvoiceLine;if(line!=null)InvoiceLines.Remove(line);UpdateTotals();}
@@ -126,7 +175,45 @@ namespace ProShitje.Wpf {
   private void Settings_Click(object sender,RoutedEventArgs e){var win=new SettingsWindow{Owner=this};if(win.ShowDialog()==true){if(File.Exists(AppConfig.AccessPath))_=LoadProductsAsync(SearchBox.Text);else ShowDemoProducts(SearchBox.Text);}}
  }
 
- public sealed class SettingsWindow : Window {
+
+ public sealed class TouchKeypadWindow : Window {
+  private readonly TextBox display=new TextBox();
+  public string Value=>display.Text;
+  public TouchKeypadWindow(string title,string initial,bool decimalAllowed){
+   Title=title;Width=330;Height=440;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=new SolidColorBrush(Color.FromRgb(243,247,252));
+   var root=new StackPanel{Margin=new Thickness(14)};
+   display.Text=initial;display.FontSize=26;display.Padding=new Thickness(10);display.HorizontalContentAlignment=HorizontalAlignment.Right;display.Margin=new Thickness(0,0,0,12);root.Children.Add(display);
+   var grid=new UniformGrid{Columns=3};
+   foreach(var key in new[]{"7","8","9","4","5","6","1","2","3","C","0","⌫",","}){
+    var b=new Button{Content=key,FontSize=22,Margin=new Thickness(3),MinHeight=48};
+    b.Click+=(s,e)=>{string k=Convert.ToString(b.Content);if(k=="C")display.Clear();else if(k=="⌫"){if(display.Text.Length>0)display.Text=display.Text.Substring(0,display.Text.Length-1);}else if(k==","){if(!display.Text.Contains(",")&&!display.Text.Contains("."))display.Text+=CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;}else display.Text+=k;display.CaretIndex=display.Text.Length;};
+    grid.Children.Add(b);
+   }
+   root.Children.Add(grid);
+   var actions=new UniformGrid{Columns=2,Margin=new Thickness(0,10,0,0)};
+   var cancel=new Button{Content="Anulo",MinHeight=44,Margin=new Thickness(3)};cancel.Click+=(s,e)=>{DialogResult=false;};
+   var ok=new Button{Content="Konfirmo",MinHeight=44,Margin=new Thickness(3),Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};ok.Click+=(s,e)=>{decimal v;if(!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out v)&&!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out v)){MessageBox.Show("Vendos një numër të vlefshëm.");return;}DialogResult=true;};
+   actions.Children.Add(cancel);actions.Children.Add(ok);root.Children.Add(actions);Content=root;
+  }
+ }
+ public sealed class PermissionsWindow : Window {
+  public bool CanEditPrice {get;private set;} public bool CanViewCostMargin {get;private set;}
+  private readonly CheckBox edit=new CheckBox{Content="Lejo ndryshimin e çmimit të shitjes",Margin=new Thickness(0,10,0,10),FontSize=14};
+  private readonly CheckBox view=new CheckBox{Content="Lejo shikimin e çmimit të blerjes dhe marzhit",Margin=new Thickness(0,0,0,16),FontSize=14};
+  public PermissionsWindow(bool currentEdit,bool currentView){
+   Title="Të drejtat e përdoruesit";Width=470;Height=260;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=Brushes.White;
+   var root=new StackPanel{Margin=new Thickness(22)};root.Children.Add(new TextBlock{Text="Autorizim i përkohshëm për këtë kompjuter",FontSize=18,FontWeight=FontWeights.Bold,Foreground=new SolidColorBrush(Color.FromRgb(16,43,78)),TextWrapping=TextWrapping.Wrap});
+   root.Children.Add(new TextBlock{Text="PIN administratori:",Margin=new Thickness(0,16,0,4)});var pin=new PasswordBox{Padding=new Thickness(8),MaxLength=20};root.Children.Add(pin);edit.IsChecked=currentEdit;view.IsChecked=currentView;root.Children.Add(edit);root.Children.Add(view);
+   var row=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};var cancel=new Button{Content="Anulo",Padding=new Thickness(18,8),Margin=new Thickness(0,0,8,0)};cancel.Click+=(s,e)=>DialogResult=false;
+   var save=new Button{Content="Apliko",Padding=new Thickness(18,8),Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};save.Click+=(s,e)=>{
+    string expected=ConfigurationManager.AppSettings["AdminPin"];if(string.IsNullOrWhiteSpace(expected))expected="1234";
+    if(pin.Password!=expected){MessageBox.Show("PIN i pasaktë.","Autorizim",MessageBoxButton.OK,MessageBoxImage.Warning);return;}
+    CanEditPrice=edit.IsChecked==true;CanViewCostMargin=view.IsChecked==true;DialogResult=true;
+   };row.Children.Add(cancel);row.Children.Add(save);root.Children.Add(row);
+   root.Children.Add(new TextBlock{Text="Shënim: PIN-i fillestar është 1234; ndryshoje te ProShitjeWpf.exe.config. Shfaqja reale e çmimit të blerjes kërkon verifikimin e fushës përkatëse në MDB.",FontSize=11,Foreground=Brushes.DimGray,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,12,0,0)});Content=root;
+  }
+ }
+\n public sealed class SettingsWindow : Window {
   private readonly TextBox path=new TextBox(); private readonly PasswordBox password=new PasswordBox(); private readonly TextBox fiscal=new TextBox();
   public SettingsWindow(){Title="Cilësimet — ProShitje";Width=650;Height=340;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=new SolidColorBrush(Color.FromRgb(243,247,252));
    var grid=new Grid{Margin=new Thickness(22)};for(int i=0;i<5;i++)grid.RowDefinitions.Add(new RowDefinition{Height=i==4?new GridLength(1,GridUnitType.Star):new GridLength(48)});grid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(150)});grid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
