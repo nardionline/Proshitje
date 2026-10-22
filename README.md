@@ -1,32 +1,41 @@
-# ProShitje 2.0 — WPF Prototype
+# ProShitje WPF — GitHub source package
 
-Projekt i ri WPF për Windows, i synuar për .NET Framework 4.8 x86 dhe Access 2003 (Jet OLEDB 4.0). Ky është prototipi i parë funksional i ndërfaqes; nuk është ende version prodhimi.
+Modern WPF POS interface for Windows, targeting .NET Framework 4.8 x86 and Microsoft Access 2003 (Jet OLEDB 4.0).
 
-## Përfshihet
-- Ndërfaqe WPF modernizuar, menu anësore dhe panel produktesh.
-- Kartat e artikujve shfaqin emërtimin, barkodin, njësinë dhe çmimin.
-- Fatura përfshin kolonat Artikulli, Njësia, Sasia, Çmimi dhe Totali.
-- Kërkim në MDB në sfond, me debounce; modalitet demo kur MDB nuk është konfiguruar.
-- Cilësime për rrugën e MDB-së, fjalëkalimin dhe dosjen e TXT fiskal.
-- F5 krijon TXT sipas modelit AED të diskutuar; F6 ruan një draft CSV lokal; F7 hap dialogun e printimit.
-- GitHub Actions ndërton paketën Windows x86.
+## Included in this source package
+- Modern WPF sales screen with two-column product cards.
+- Invoice grid with product, unit, quantity, price and line total.
+- Product search from the configured Access MDB (`Artikulli` table).
+- Demo catalog when no database is configured.
+- Settings dialog for the MDB path/password and fiscal TXT output folder.
+- TXT export prototype and Windows print dialog.
+- GitHub Actions workflow to build the Windows x86 package.
 
-## E rëndësishme — kufijtë e këtij prototipi
-- F6 ruan vetëm një draft CSV testues në `%LOCALAPPDATA%\ProShitje\Drafts`; nuk shkruan ende në tabelat e faturave të Access-it.
-- F5 konfirmon vetëm krijimin e skedarit TXT, jo pranimin nga pajisja fiskale.
-- F7 përdor dialogun standard të printimit të Windows; printimi termik/fiskal duhet testuar me pajisjen reale.
-- Të dhënat demo dhe çmimet demo janë ilustrative. Kur MDB është zgjedhur, katalogu lexohet nga tabela `Artikulli` dhe njësia merret nga fusha `[Njësia e matjes]`.
-- Para përdorimit real duhet verifikuar skema e plotë e MDB-së, ruajtja e faturës, llogaritja e TVSH-së/zbritjeve, anulimet, numërimi i faturave dhe integrimi fiskal.
-- Access MDB nuk rekomandohet si databazë e përbashkët afatgjatë për shumë kasa. Arkitektura duhet të migrojë më vonë në databazë serveri/API.
+## Important — current implementation status
+This repository is a **development prototype, not a production-ready cash register**.
 
-## Si testohet
-1. Hap Cilësime → zgjidh kopjen testuese të MDB-së.
-2. Kliko **Testo MDB** dhe ruaj cilësimet.
-3. Kërko artikuj; kartat duhet të lexojnë emërtimin, barkodin, njësinë, çmimin dhe stokun nga Access.
-4. Kliko një kartë për ta shtuar në faturë. Njësia shfaqet në kolonën e faturës.
-5. Testo F5, F6 dhe F7 vetëm me të dhëna prove.
+- The current F6 action saves a local CSV draft; it does **not** yet save invoices to `Fature Hyrje-Dalje` and `Hyrje-Dalje`.
+- Client and supplier maintenance, dynamic rewards configuration, and a persistent points ledger are **not yet integrated into the WPF sales screen**.
+- The existing `Klienti.Piketegrumbulluara` field is present in the supplied schema, but a reliable points ledger and market-configurable conversion rules need to be implemented and tested before use.
+- The fiscal TXT output only confirms that a text file was created; it does not confirm fiscal-device acceptance.
+- Printing uses the standard Windows print dialog and has not been validated on a thermal printer.
+- Stock updates, invoice numbering, VAT, discounts, cancellation and transaction rollback must be verified against a copy of the real MDB before production use.
 
-## Build
-GitHub Actions → `Build ProShitje WPF x86` → shkarko artifact `ProShitjeWpf-Windows-x86`.
+## Upload to GitHub
+1. Extract this ZIP into a new folder.
+2. Create/open the intended GitHub repository.
+3. Upload the **contents** of the extracted folder (not the ZIP itself), including `.github/workflows/build.yml`.
+4. Commit to `main` or `master`.
+5. Open **Actions** and select `Build ProShitje WPF x86`.
+6. Download artifact `ProShitjeWpf-Windows-x86` after the workflow succeeds.
 
-Përdorimi i MDB-së kërkon Windows x86/Jet OLEDB 4.0 të instaluar. Nuk është verifikuar build-i në këtë mjedis; build-i real kryhet nga GitHub Actions në Windows.
+## Build and runtime requirements
+- Windows with Visual Studio Build Tools / MSBuild and .NET Framework 4.8 targeting pack.
+- The MDB connection uses Jet OLEDB 4.0 and the application is configured for x86. The target Windows machine must have a compatible Jet provider installed.
+- Do not commit a real MDB file, database password, or customer data. Keep a separate backup and use a test copy during development.
+
+## Configure the MDB
+Run the built application, open **Cilësimet**, choose a test copy of the `.mdb`, enter its password if required, click **Testo MDB**, then save. Do not test write operations against the production database.
+
+## Validation note
+The build is delegated to GitHub Actions on Windows. This source package has not been compiled in the current Linux workspace, so a successful Windows Actions run is still required to validate the build.
