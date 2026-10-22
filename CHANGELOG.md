@@ -1,3 +1,10 @@
+# Changelog
+
+## 2.0.4
+- Fixed accidental literal `\n` before `SettingsWindow` that caused CS1056/CS1585.
+- No functional changes to invoice logic.
+- Build not verified locally; validate with GitHub Actions.
+
 # Changelog — ProShitje WPF
 
 ## 2.0.0 — Baseline reset
@@ -16,3 +23,10 @@
 - U shtua dialog fillestar për autorizimin e ndryshimit të çmimit dhe lejen e shikimit të kostos/marzhit.
 - Çmimi i blerjes/marzhi nuk janë aktivizuar për shfaqje: fusha përkatëse e MDB duhet identifikuar përpara se të llogaritet fitimi.
 - Build-i nuk është verifikuar ende në Windows; kërkohet GitHub Actions.
+
+
+## 2.0.5 - Fatura Layout
+- Moved unit display under the product description in the invoice.
+- Removed explicit duplicate Microsoft.WinFX.targets import; Microsoft.CSharp.targets imports framework targets.
+- No database schema or save behavior changes.
+- Build not verified on Windows.

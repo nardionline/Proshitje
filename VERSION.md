@@ -1,6 +1,7 @@
-# ProShitje WPF — Version 2.0.3
+# ProShitje WPF 2.0.5 - Fatura Layout
 
-- Bazë: WPF, .NET Framework 4.8, x86.
-- Ndryshim i fokusuar: ndërveprimi i sasisë/çmimit në faturë dhe kontrollet fillestare të autorizimit.
-- Statusi i build-it: **I PAVERIFIKUAR** — kërkohet GitHub Actions.
-- Kufizim i njohur: çmimi i blerjes dhe marzhi nuk shfaqen ende, sepse fusha e çmimit të blerjes në MDB nuk është verifikuar. Autorizimi në këtë version ruhet në konfigurimin lokal të aplikacionit, jo si profil individual i ruajtur në databazë.
+Base: 2.0.4 Fix Syntax.
+
+Focused change: display unit (e.g. cope/kg) under the product description in the invoice instead of a separate column; remove duplicate Microsoft.WinFX.targets import warning source.
+
+Build status: NOT VERIFIED on Windows/MSBuild. No claim of successful build.

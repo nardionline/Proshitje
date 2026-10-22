@@ -31,5 +31,4 @@
     <None Include="App.config"/><None Include="README.md"/><None Include="CHANGELOG.md"/>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.WinFX.targets" />
 </Project>

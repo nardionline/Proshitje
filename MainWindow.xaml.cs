@@ -213,7 +213,8 @@ namespace ProShitje.Wpf {
    root.Children.Add(new TextBlock{Text="Shënim: PIN-i fillestar është 1234; ndryshoje te ProShitjeWpf.exe.config. Shfaqja reale e çmimit të blerjes kërkon verifikimin e fushës përkatëse në MDB.",FontSize=11,Foreground=Brushes.DimGray,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,12,0,0)});Content=root;
   }
  }
-\n public sealed class SettingsWindow : Window {
+
+ public sealed class SettingsWindow : Window {
   private readonly TextBox path=new TextBox(); private readonly PasswordBox password=new PasswordBox(); private readonly TextBox fiscal=new TextBox();
   public SettingsWindow(){Title="Cilësimet — ProShitje";Width=650;Height=340;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=new SolidColorBrush(Color.FromRgb(243,247,252));
    var grid=new Grid{Margin=new Thickness(22)};for(int i=0;i<5;i++)grid.RowDefinitions.Add(new RowDefinition{Height=i==4?new GridLength(1,GridUnitType.Star):new GridLength(48)});grid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(150)});grid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});

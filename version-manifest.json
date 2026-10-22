@@ -1,15 +1,17 @@
 {
-  "version": "2.0.3",
+  "version": "2.0.5",
   "project": "ProShitje WPF",
   "base_archive": "Proshitje(1).zip",
   "framework": ".NET Framework 4.8",
   "platform": "x86",
   "build_status": "not_verified",
   "changes": [
-    "touch keypad and keyboard entry for quantity",
-    "price edit authorization dialog",
-    "safe total refresh",
-    "purchase cost/margin display pending MDB schema verification"
+    "Invoice unit appears under product description",
+    "Removed duplicate Microsoft.WinFX.targets import"
   ],
-  "do_not_mix_with": "Windows Forms"
+  "do_not_mix_with": "Windows Forms",
+  "change_summary": "Syntax fix: removed accidental literal \\n before SettingsWindow.",
+  "name": "ProShitje WPF 2.0.5 - Fatura Layout",
+  "base_version": "2.0.4",
+  "notes": "Do not treat as production-ready until GitHub Actions build and manual tests pass."
 }
