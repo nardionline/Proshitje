@@ -1,8 +1,8 @@
-# ProShitje WPF Version Manifest
+# ProShitje WPF
 
-- Version: 2.0.1-diagnostics
-- Base: user-uploaded `Proshitje(1).zip`
-- Technology: C# WPF, .NET Framework 4.8, x86
-- Purpose: catch startup/runtime exceptions and show the exact error.
-- Build status: NOT VERIFIED here; run GitHub Actions after upload.
-- Do not mix this project with Windows Forms files.
+Version: 2.0.2
+Base: uploaded Proshitje(1).zip
+Platform: WPF, .NET Framework 4.8, x86
+Status: source fix applied; Windows build/runtime not verified in this environment.
+
+Startup fix: UpdateTotals now waits until both SubtotalText and TotalText controls exist, preventing DiscountBox_TextChanged from dereferencing TotalText during XAML initialization.

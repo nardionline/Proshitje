@@ -103,7 +103,7 @@ namespace ProShitje.Wpf {
   private decimal Subtotal=>InvoiceLines.Sum(x=>x.LineTotal);
   private decimal DiscountPercent {get{decimal d;return decimal.TryParse(DiscountBox?.Text,out d)?Math.Max(0,Math.Min(100,d)):0;}}
   private decimal Total=>decimal.Round(Subtotal*(1-DiscountPercent/100m),2);
-  private void UpdateTotals(){if(SubtotalText==null)return;SubtotalText.Text=Subtotal.ToString("N2",Sq)+" lekë";TotalText.Text=Total.ToString("N2",Sq)+" lekë";}
+  private void UpdateTotals(){if(SubtotalText==null||TotalText==null)return;SubtotalText.Text=Subtotal.ToString("N2",Sq)+" lekë";TotalText.Text=Total.ToString("N2",Sq)+" lekë";}
   private void DiscountBox_TextChanged(object sender,TextChangedEventArgs e){UpdateTotals();}
   private void ClearInvoice_Click(object sender,RoutedEventArgs e){if(InvoiceLines.Count>0&&MessageBox.Show("Të pastrohet fatura aktuale?","ProShitje",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes)return;InvoiceLines.Clear();UpdateTotals();}
   private void RemoveLine_Click(object sender,RoutedEventArgs e){var b=sender as Button;var line=b?.DataContext as InvoiceLine;if(line!=null)InvoiceLines.Remove(line);UpdateTotals();}
