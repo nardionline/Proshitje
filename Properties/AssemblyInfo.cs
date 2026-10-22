@@ -1,2 +1,0 @@
-using System.Reflection; using System.Runtime.InteropServices;
-[assembly: AssemblyTitle("ProShitje Licensing Starter")][assembly: AssemblyDescription("Offline licensing starter")][assembly: AssemblyCompany("ProShitje")][assembly: AssemblyProduct("ProShitje Licensing")][assembly: ComVisible(false)][assembly: Guid("a3e24f9a-9b87-44b2-ab1a-71203fbe8841")][assembly: AssemblyVersion("1.0.0.0")]

@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "project": "ProShitje WPF",
+  "framework": ".NET Framework 4.8",
+  "platform": "x86",
+  "database_target": "Microsoft Access MDB / Jet OLEDB 4.0",
+  "base_archive": "ProShitjeWPF_Prototype_2.0.zip",
+  "base_archive_sha256": "c1ecaf3f6200989597fd6cdb3d028e67d499e172342dc91c60d854144d170945",
+  "build_status": "NOT VERIFIED",
+  "release_status": "BASELINE PROTOTYPE",
+  "rules": [
+    "WPF only; do not mix with Windows Forms",
+    "one focused change per version",
+    "preserve old ZIPs",
+    "update VERSION.md and CHANGELOG.md for each release",
+    "claim build success only after a successful GitHub Actions run"
+  ]
+}
