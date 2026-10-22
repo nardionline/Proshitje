@@ -1,17 +1,17 @@
 {
-  "version": "2.0.5",
+  "version": "2.0.6",
   "project": "ProShitje WPF",
   "base_archive": "Proshitje(1).zip",
   "framework": ".NET Framework 4.8",
   "platform": "x86",
   "build_status": "not_verified",
   "changes": [
-    "Invoice unit appears under product description",
-    "Removed duplicate Microsoft.WinFX.targets import"
+    "Added System.Windows.Controls.Primitives using for UniformGrid",
+    "Fixed Thickness constructors to supply four values"
   ],
   "do_not_mix_with": "Windows Forms",
-  "change_summary": "Syntax fix: removed accidental literal \\n before SettingsWindow.",
-  "name": "ProShitje WPF 2.0.5 - Fatura Layout",
-  "base_version": "2.0.4",
+  "change_summary": "Fixes the four compile errors reported by GitHub Actions in 2.0.5.",
+  "name": "ProShitje WPF 2.0.6 - Fix Build Errors",
+  "base_version": "2.0.5",
   "notes": "Do not treat as production-ready until GitHub Actions build and manual tests pass."
 }

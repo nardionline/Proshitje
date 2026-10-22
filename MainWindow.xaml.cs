@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -204,8 +205,8 @@ namespace ProShitje.Wpf {
    Title="Të drejtat e përdoruesit";Width=470;Height=260;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=Brushes.White;
    var root=new StackPanel{Margin=new Thickness(22)};root.Children.Add(new TextBlock{Text="Autorizim i përkohshëm për këtë kompjuter",FontSize=18,FontWeight=FontWeights.Bold,Foreground=new SolidColorBrush(Color.FromRgb(16,43,78)),TextWrapping=TextWrapping.Wrap});
    root.Children.Add(new TextBlock{Text="PIN administratori:",Margin=new Thickness(0,16,0,4)});var pin=new PasswordBox{Padding=new Thickness(8),MaxLength=20};root.Children.Add(pin);edit.IsChecked=currentEdit;view.IsChecked=currentView;root.Children.Add(edit);root.Children.Add(view);
-   var row=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};var cancel=new Button{Content="Anulo",Padding=new Thickness(18,8),Margin=new Thickness(0,0,8,0)};cancel.Click+=(s,e)=>DialogResult=false;
-   var save=new Button{Content="Apliko",Padding=new Thickness(18,8),Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};save.Click+=(s,e)=>{
+   var row=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right};var cancel=new Button{Content="Anulo",Padding=new Thickness(18,8,18,8),Margin=new Thickness(0,0,8,0)};cancel.Click+=(s,e)=>DialogResult=false;
+   var save=new Button{Content="Apliko",Padding=new Thickness(18,8,18,8),Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};save.Click+=(s,e)=>{
     string expected=ConfigurationManager.AppSettings["AdminPin"];if(string.IsNullOrWhiteSpace(expected))expected="1234";
     if(pin.Password!=expected){MessageBox.Show("PIN i pasaktë.","Autorizim",MessageBoxButton.OK,MessageBoxImage.Warning);return;}
     CanEditPrice=edit.IsChecked==true;CanViewCostMargin=view.IsChecked==true;DialogResult=true;

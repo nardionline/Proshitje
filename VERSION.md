@@ -1,7 +1,7 @@
-# ProShitje WPF 2.0.5 - Fatura Layout
+# ProShitje WPF 2.0.6 - Fix Build Errors
 
-Base: 2.0.4 Fix Syntax.
+Base: ProShitje WPF 2.0.5 - Fatura Layout.
 
-Focused change: display unit (e.g. cope/kg) under the product description in the invoice instead of a separate column; remove duplicate Microsoft.WinFX.targets import warning source.
+Focused changes: added the Controls.Primitives namespace for UniformGrid and fixed Thickness constructor arguments.
 
-Build status: NOT VERIFIED on Windows/MSBuild. No claim of successful build.
+Build status: NOT VERIFIED on Windows/MSBuild.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.6 - Fix Build Errors
+- Added the WPF Controls.Primitives namespace required by UniformGrid.
+- Corrected invalid two-argument Thickness constructors to four-argument constructors.
+- Build status: not verified locally; check GitHub Actions.
+
+
 ## 2.0.4
 - Fixed accidental literal `\n` before `SettingsWindow` that caused CS1056/CS1585.
 - No functional changes to invoice logic.

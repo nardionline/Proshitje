@@ -43,3 +43,7 @@ Ky është një prototip bazë për rikthimin e kontrollit të versioneve. Ndër
 Sasia në faturë mund të ndryshohet me tastierën fizike ose me tastierën numerike në ekran. Ndryshimi i çmimit kërkon autorizim. PIN fillestar për konfigurimin e të drejtave: `1234`; ndryshoje para përdorimit real te `ProShitjeWpf.exe.config` (`AdminPin`).
 
 **Kujdes:** kjo është një fazë e parë. Të drejtat ruhen në konfigurimin lokal të aplikacionit, jo ende për çdo punonjës veçmas. Çmimi i blerjes dhe marzhi nuk shfaqen derisa të verifikohet fusha përkatëse në MDB. Build-i duhet verifikuar në GitHub Actions.
+
+
+## Version 2.0.6
+Fixes the missing UniformGrid namespace and invalid Thickness constructor arguments reported by the 2.0.5 build. Build is not yet verified.
