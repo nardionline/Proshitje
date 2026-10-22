@@ -1,11 +1,22 @@
-using System; using System.Data.OleDb; using System.Management; using System.Security.Cryptography; using System.Text;
-namespace ProShitjeLicensing {
-public sealed class DeviceNumbers { public string SsdSerial{get;set;} public long N1{get;set;} public long N2{get;set;} }
-public static class LicenseService {
-private const long K=222;
-public static DeviceNumbers GetDeviceNumbers(){string serial=ReadDiskSerial();if(string.IsNullOrWhiteSpace(serial))throw new InvalidOperationException("Windows nuk arriti të lexojë serialin e diskut. Kontrollo WMI/driver-at.");serial=serial.Trim().ToUpperInvariant();byte[] hash;using(var sha=SHA256.Create())hash=sha.ComputeHash(Encoding.UTF8.GetBytes(serial));long n1=100000+(BitConverter.ToUInt32(hash,0)%900000);long n2=100000+(BitConverter.ToUInt32(hash,4)%900000);return new DeviceNumbers{SsdSerial=serial,N1=n1,N2=n2};}
-private static string ReadDiskSerial(){try{using(var q=new ManagementObjectSearcher("SELECT DeviceID, Index FROM Win32_DiskDrive")){foreach(ManagementObject d in q.Get()){string device=Convert.ToString(d["DeviceID"]);if(string.IsNullOrWhiteSpace(device))continue;string escaped=device.Replace("\\","\\\\").Replace("'","\\'");using(var p=new ManagementObjectSearcher("SELECT SerialNumber, Tag FROM Win32_PhysicalMedia")){foreach(ManagementObject m in p.Get()){if(string.Equals(Convert.ToString(m["Tag"]),device,StringComparison.OrdinalIgnoreCase)){string s=Convert.ToString(m["SerialNumber"]);if(!string.IsNullOrWhiteSpace(s))return s.Trim();}}}}}}catch{}return null;}
-public static bool ValidateFormula(long n1,long n2,long serial){try{return checked((n1*K)+n2+K)==serial;}catch{return false;}}
-public static string FindDefaultDatabase(){string p=System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"marketdb.mdb");if(System.IO.File.Exists(p))return p;p=System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"marketdb(1).mdb");return System.IO.File.Exists(p)?p:"";}
-public static void SaveToAccess(string path,string serial,DateTime registered,DateTime expires){if(!System.IO.File.Exists(path))throw new InvalidOperationException("MDB nuk u gjet.");string cs="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+path+";";using(var c=new OleDbConnection(cs)){c.Open();using(var cmd=new OleDbCommand("INSERT INTO [Serial] ([Seriali], [Datereg], [Dateperfudimi]) VALUES (?, ?, ?)",c)){cmd.Parameters.Add("?",OleDbType.VarWChar,255).Value=serial;cmd.Parameters.Add("?",OleDbType.Date).Value=registered;cmd.Parameters.Add("?",OleDbType.Date).Value=expires;cmd.ExecuteNonQuery();}}}
-}}
+using System;
+using System.Security.Cryptography;
+using System.Text;
+namespace ProShitje13 {
+ public static class LicenseService {
+  // Aktivizim lokal i nënshkruar. Ndrysho çelësin sekret dhe mbaje jashtë repository-t për produkt real.
+  private const string ProductCode="PS13";
+  private const string SigningSecret="REPLACE_WITH_PRIVATE_VENDOR_SECRET_BEFORE_RELEASE";
+  public static bool Validate(string serial) {
+   if(String.IsNullOrWhiteSpace(serial)) return false;
+   var parts=serial.Trim().ToUpperInvariant().Split('-');
+   if(parts.Length!=3 || parts[0]!=ProductCode) return false;
+   string payload=parts[0]+"-"+parts[1];
+   using(var sha=new SHA256Managed()) {
+    var hash=sha.ComputeHash(Encoding.UTF8.GetBytes(SigningSecret+"|"+payload));
+    string token=BitConverter.ToString(hash).Replace("-","").Substring(0,8);
+    return String.Equals(token,parts[2],StringComparison.OrdinalIgnoreCase);
+   }
+  }
+  // Për gjenerimin e serialeve përdor një mjet të veçantë të shitësit; mos shpërnda sekretin me aplikacionin.
+ }
+}

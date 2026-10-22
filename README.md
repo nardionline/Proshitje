@@ -1,41 +1,55 @@
-# ProShitje WPF — GitHub source package
+# ProShitje 1.3 — Windows x86
 
-Modern WPF POS interface for Windows, targeting .NET Framework 4.8 x86 and Microsoft Access 2003 (Jet OLEDB 4.0).
+Ky është një version i avancuar i ndërfaqes dhe bazës së projektit për Windows Forms / .NET Framework 4.8, i projektuar për MDB Access 2003 me Jet OLEDB 4.0.
 
-## Included in this source package
-- Modern WPF sales screen with two-column product cards.
-- Invoice grid with product, unit, quantity, price and line total.
-- Product search from the configured Access MDB (`Artikulli` table).
-- Demo catalog when no database is configured.
-- Settings dialog for the MDB path/password and fiscal TXT output folder.
-- TXT export prototype and Windows print dialog.
-- GitHub Actions workflow to build the Windows x86 package.
+## Përfshihet në këtë version
+- Ndërfaqe me menu anësore, dashboard dhe pamje të unifikuara.
+- Konfigurim i databazës `.mdb`, fjalëkalim, testim lidhjeje dhe ruajtje në profilin lokal të Windows.
+- Kërkim artikujsh sipas emërtimit, barkodit dhe kodit; kërkimi bëhet në sfond.
+- Shportë provizore shitjeje dhe eksport i përmbajtjes në AED TXT.
+- Pamje informative vetëm-lexim për klientët, furnitorët, faturat, hyrjet/daljet dhe artikujt me datë skadence.
+- Workflow GitHub Actions për build x86 dhe paketim ZIP.
 
-## Important — current implementation status
-This repository is a **development prototype, not a production-ready cash register**.
+## Kufizime që duhen zgjidhur para përdorimit real
+- Shitja nuk ruhet ende në tabelat `Fature Hyrje-Dalje` dhe `Hyrje-Dalje`; pagesa nuk regjistrohet.
+- Eksporti AED TXT është vetëm gjenerim skedari dhe duhet provuar me pajisjen/protokollin real.
+- Pamjet e listave janë vetëm-lexim; formularët e krijimit/redaktimit dhe lëvizjet e magazinës nuk janë aktivizuar.
+- Licencimi vjetor dhe gjenerimi i serialeve nuk janë implementuar si mekanizëm sigurie. Mos e trajtoni butonin e testimit si licencë komerciale.
+- Dashboard-i është vizual; treguesit financiarë nuk duhen konsideruar raporte të verifikuara.
+- Konfigurimi ruan aktualisht fjalëkalimin e MDB në XML lokal. Për publikim komercial duhet mbrojtur/kriptografuar.
 
-- F6 now attempts to save a sales invoice to `Fature Hyrje-Dalje` and its item rows to `Hyrje-Dalje`, then updates `Artikulli.[Sasia Stock]` in the same Access transaction. It blocks sales when stock is insufficient. Test this only on a copy of the MDB; field mappings and business rules still require validation against actual application behavior.
-- Client and supplier maintenance, dynamic rewards configuration, and a persistent points ledger are **not yet integrated into the WPF sales screen**.
-- The existing `Klienti.Piketegrumbulluara` field is present in the supplied schema, but a reliable points ledger and market-configurable conversion rules need to be implemented and tested before use.
-- The fiscal TXT output only confirms that a text file was created; it does not confirm fiscal-device acceptance.
-- Printing uses the standard Windows print dialog and has not been validated on a thermal printer.
-- Purchase-entry screens, manual warehouse movements, stock adjustments/transfers, customer/supplier management and reports are not yet integrated. The invoice numbering, VAT handling, discount allocation, cancellation and transaction behavior must be verified against a copy of the MDB before production use.
+## Build në GitHub
+1. Ngarko përmbajtjen e ZIP-it në rrënjën e repository-t (ku ndodhet `ProShitje13.csproj`).
+2. Commit/push në `main` ose `master`, ose nis workflow manualisht te Actions.
+3. Shkarko artifact-in `ProShitje13-Windows-x86`.
+4. Provoje në Windows me Jet OLEDB 4.0 dhe një kopje rezervë të MDB-së.
 
-## Upload to GitHub
-1. Extract this ZIP into a new folder.
-2. Create/open the intended GitHub repository.
-3. Upload the **contents** of the extracted folder (not the ZIP itself), including `.github/workflows/build.yml`.
-4. Commit to `main` or `master`.
-5. Open **Actions** and select `Build ProShitje WPF x86`.
-6. Download artifact `ProShitjeWpf-Windows-x86` after the workflow succeeds.
+## Siguria e të dhënave
+Ky version nuk bën shkrime në databazën ekzistuese nga modulet informative. Përpara çdo implementimi që regjistron fatura ose lëvizje, krijo kopje rezervë dhe verifiko lidhjet/master-detail në MDB-në reale. Fushat ekzistuese nuk duhet të fshihen, riemërtohen ose të ndryshohet tipi i tyre pa miratim.
 
-## Build and runtime requirements
-- Windows with Visual Studio Build Tools / MSBuild and .NET Framework 4.8 targeting pack.
-- The MDB connection uses Jet OLEDB 4.0 and the application is configured for x86. The target Windows machine must have a compatible Jet provider installed.
-- Do not commit a real MDB file, database password, or customer data. Keep a separate backup and use a test copy during development.
 
-## Configure the MDB
-Run the built application, open **Cilësimet**, choose a test copy of the `.mdb`, enter its password if required, click **Testo MDB**, then save. Do not test write operations against the production database.
+## Ndryshime në ekranin e arkës
+- Fusha e kërkimit është më e gjerë dhe tregon qartë përdorimin me skaner/ENTER.
+- Shporta ka kolona të lexueshme, lartësi më të madhe rreshtash dhe total të dukshëm.
+- Janë shtuar butona të mëdhenj për F5 Fiskale, F6 Ruaj dhe F7 Printo, të përshtatshëm për touchscreen.
+- Tastet F5/F6/F7 dhe butonat shfaqin qartë kur integrimi real nuk është konfiguruar. Nuk simulohet një fiskalizim, ruajtje apo printim i suksesshëm.
+- Ky është ende version për testim të ndërfaqes: ruajtja e faturës në MDB dhe printimi/fiskalizimi real duhen implementuar e verifikuar para përdorimit në shitje.
 
-## Validation note
-The build is delegated to GitHub Actions on Windows. This source package has not been compiled in the current Linux workspace, so a successful Windows Actions run is still required to validate the build.
+
+### Fix revizion 5
+- U hoq plotësisht `SplitContainer` nga ekrani i shitjes, sepse ai po shkaktonte përjashtimin `SplitterDistance` gjatë inicializimit.
+- Lista e artikujve dhe shporta tani organizohen me `TableLayoutPanel` me përqindje 53/47, pa `SplitterDistance` dhe pa madhësi minimale të paneleve.
+
+
+## Njësitë e matjes në Market POS
+- Lista e produkteve shfaq njësinë nga fusha ekzistuese `Njësia e matjes`.
+- Shporta/fatura shfaq gjithashtu njësinë për çdo artikull.
+- Rreshtat janë më të lartë dhe emërtimi mund të shfaqet në dy rreshta.
+- Nuk ndryshohet struktura e MDB-së.
+
+
+## Rev. 11 – përmirësim i rrjedhës së arkës
+- Klikimi mbi kartën e produktit shton menjëherë artikullin; butoni i vogël + është alternativë.
+- Enter pas kërkimit shton rezultatin e parë të filtruar; barkodi/kodi unik shtohet si më parë.
+- Shigjetat majtas/djathtas/lart/poshtë lëvizin zgjedhjen në kartat e rezultateve; Enter nga dritarja (kur fusha e kërkimit nuk ka fokus) aktivizon kartën e zgjedhur.
+- Rregullohet rendi i docking të panelit të faturës për të lënë hapësirë të plotë për listën dhe kokën e kolonave.

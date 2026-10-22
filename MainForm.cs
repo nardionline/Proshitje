@@ -84,7 +84,13 @@ namespace ProShitje13 {
    var bar=new Panel{Dock=DockStyle.Top,Height=58};content.Controls.Add(bar);
    searchBox=SearchField("Kërko me barkod, kod ose emërtim...",560);searchBox.SetBounds(0,8,560,36);bar.Controls.Add(searchBox);
    var hint=new Label{Text="Shkruaj për kërkim automatik • skano barkodin",Left=575,Top=16,AutoSize=true,ForeColor=Color.Gray};bar.Controls.Add(hint);
-   productsGrid=NewGrid();content.Controls.Add(productsGrid);productsGrid.BringToFront();bar.BringToFront();
+   var add=Btn("+ Artikull i ri",green);add.SetBounds(0,bar.Height+4,145,36);add.Anchor=AnchorStyles.Top|AnchorStyles.Left;content.Controls.Add(add);add.BringToFront();
+   var edit=Btn("Modifiko të zgjedhurin",blue);edit.SetBounds(153,bar.Height+4,190,36);content.Controls.Add(edit);edit.BringToFront();
+   var delete=Btn("Fshi artikullin",Color.FromArgb(180,65,65));delete.SetBounds(351,bar.Height+4,145,36);content.Controls.Add(delete);delete.BringToFront();
+   productsGrid=NewGrid();productsGrid.Top=bar.Height+46;productsGrid.Dock=DockStyle.None;productsGrid.Anchor=AnchorStyles.Top|AnchorStyles.Bottom|AnchorStyles.Left|AnchorStyles.Right;productsGrid.SetBounds(0,bar.Height+46,content.ClientSize.Width,Math.Max(200,content.ClientSize.Height-bar.Height-46));content.Controls.Add(productsGrid);productsGrid.BringToFront();bar.BringToFront();
+   add.Click+=(s,e)=>EditRecord("Artikulli",null,()=>{_=LoadProductsAsync(SearchTerm(searchBox));});
+   edit.Click+=(s,e)=>{if(productsGrid.CurrentRow==null||!(productsGrid.CurrentRow.DataBoundItem is DataRowView rv)){MessageBox.Show("Zgjidh një artikull.");return;}EditRecord("Artikulli",rv.Row,()=>{_=LoadProductsAsync(SearchTerm(searchBox));});};
+   delete.Click+=(s,e)=>DeleteSelected("Artikulli",productsGrid,"Artikulli",()=>{_=LoadProductsAsync(SearchTerm(searchBox));});
    searchBox.TextChanged+=(s,e)=>{searchTimer.Stop();searchTimer.Start();};
    searchBox.KeyDown+=(s,e)=>{
     if(e.KeyCode==Keys.Enter){searchTimer.Stop();addFirstFilteredOnEnter=true;_=LoadProductsAsync(SearchTerm(searchBox));e.SuppressKeyPress=true;}
@@ -120,11 +126,33 @@ namespace ProShitje13 {
   }
   void BuildDataModule(string page,string sql){
    content.Controls.Add(Heading(page));
-   var bar=new Panel{Dock=DockStyle.Top,Height=54,BackColor=bg};content.Controls.Add(bar);
-   var filter=SearchField("Filtro listën e ngarkuar...",420);filter.SetBounds(0,8,420,34);bar.Controls.Add(filter);
-   var note=new Label{Text="Pamje informative • të dhënat nuk ndryshohen nga kjo listë",Left=435,Top=17,AutoSize=true,ForeColor=Color.FromArgb(115,128,147)};bar.Controls.Add(note);
+   var bar=new Panel{Dock=DockStyle.Top,Height=96,BackColor=bg};content.Controls.Add(bar);
+   var filter=SearchField("Filtro listën e ngarkuar...",390);filter.SetBounds(0,8,390,34);bar.Controls.Add(filter);
    var grid=NewGrid();content.Controls.Add(grid);grid.BringToFront();bar.BringToFront();
-   try{var dt=DatabaseService.ReadTable(cfg.DatabasePath,cfg.DatabasePassword,sql);grid.DataSource=dt;filter.Text="";filter.ForeColor=Color.FromArgb(35,50,72);filter.TextChanged+=(s,e)=>{try{dt.DefaultView.RowFilter="";if(!String.IsNullOrWhiteSpace(filter.Text)){string term=filter.Text.Replace("'","''").Replace("[","[[]");var parts=new System.Collections.Generic.List<string>();foreach(DataColumn col in dt.Columns)if(col.DataType==typeof(string))parts.Add("Convert(["+col.ColumnName.Replace("]","]]" )+"], 'System.String') LIKE '%"+term+"%'");if(parts.Count>0)dt.DefaultView.RowFilter=String.Join(" OR ",parts.ToArray());} }catch{} };status.Text=page+": "+dt.Rows.Count+" rreshta (vetëm lexim).";}catch(Exception ex){status.Text="Nuk u hap moduli "+page+": "+ex.Message;grid.DataSource=new DataTable();}
+   bool editable=(page=="Klientët"||page=="Furnitorët");
+   if(editable){var add=Btn("+ Shto",green);add.SetBounds(405,8,105,34);bar.Controls.Add(add);var edit=Btn("Modifiko",blue);edit.SetBounds(518,8,110,34);bar.Controls.Add(edit);var del=Btn("Fshi",Color.FromArgb(180,65,65));del.SetBounds(636,8,90,34);bar.Controls.Add(del);
+    add.Click+=(s,e)=>EditRecord(page=="Klientët"?"Klienti":"Furnitori",null,()=>Navigate(page));
+    edit.Click+=(s,e)=>{if(grid.CurrentRow==null||!(grid.CurrentRow.DataBoundItem is DataRowView rv)){MessageBox.Show("Zgjidh një rresht.");return;}EditRecord(page=="Klientët"?"Klienti":"Furnitori",rv.Row,()=>Navigate(page));};
+    del.Click+=(s,e)=>DeleteSelected(page=="Klientët"?"Klienti":"Furnitori",grid,"Emer Mbiemer",()=>Navigate(page));
+   }else{var note=new Label{Text="Pamje informative • pa ndryshime nga kjo listë",Left=405,Top=17,AutoSize=true,ForeColor=Color.FromArgb(115,128,147)};bar.Controls.Add(note);}
+   try{var dt=DatabaseService.ReadTable(cfg.DatabasePath,cfg.DatabasePassword,sql);grid.DataSource=dt;filter.Text="";filter.ForeColor=Color.FromArgb(35,50,72);filter.TextChanged+=(s,e)=>{try{dt.DefaultView.RowFilter="";if(!String.IsNullOrWhiteSpace(filter.Text)){string term=filter.Text.Replace("'","''").Replace("[","[[]");var parts=new System.Collections.Generic.List<string>();foreach(DataColumn col in dt.Columns)if(col.DataType==typeof(string))parts.Add("Convert(["+col.ColumnName.Replace("]","]]" )+"], 'System.String') LIKE '%"+term+"%'");if(parts.Count>0)dt.DefaultView.RowFilter=String.Join(" OR ",parts.ToArray());}}catch{} };status.Text=page+": "+dt.Rows.Count+" rreshta";}catch(Exception ex){status.Text="Nuk u hap moduli "+page+": "+ex.Message;grid.DataSource=new DataTable();}
+  }
+  void EditRecord(string table,DataRow row,Action afterSave){
+   string[] fields; string[] labels;
+   if(table=="Klienti"){fields=new[]{"Emer Mbiemer","Tel","Cel","email","adrese","Kod"};labels=new[]{"Emër / Mbiemër","Telefon","Celular","Email","Adresa","Kodi"};}
+   else if(table=="Furnitori"){fields=new[]{"Emer Mbiemer","Tel","Cel","email","adrese"};labels=new[]{"Emër / Mbiemër","Telefon","Celular","Email","Adresa"};}
+   else {fields=new[]{"Kodi","Barcodi","Artikulli","Pershkrimi","Firma","Njësia e matjes","Cmimihyrjes","Cmimi i daljes","Sasia Stock","Vendi ne magazine"};labels=new[]{"Kodi","Barkodi","Emërtimi","Përshkrimi","Firma","Njësia e matjes","Çmimi i hyrjes","Çmimi i daljes","Gjendja stok","Vendi në magazinë"};}
+   using(var f=new Form{Text=(row==null?"Shto ":"Modifiko ")+table,Width=560,Height=620,StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,BackColor=Color.White}){
+    var inputs=new System.Collections.Generic.Dictionary<string,TextBox>();int y=18;
+    for(int i=0;i<fields.Length;i++){f.Controls.Add(new Label{Text=labels[i],Left=22,Top=y+5,Width=155,Height=25});var t=new TextBox{Left=185,Top=y,Width=330,Height=28};if(row!=null&&row.Table.Columns.Contains(fields[i]))t.Text=Convert.ToString(row[fields[i]]);inputs[fields[i]]=t;f.Controls.Add(t);y+=42;}
+    var save=Btn("Ruaj",green);save.SetBounds(185,y+8,140,38);var cancel=Btn("Anulo",Color.Gray);cancel.SetBounds(335,y+8,140,38);f.Controls.Add(save);f.Controls.Add(cancel);cancel.Click+=(s,e)=>f.Close();
+    save.Click+=(s,e)=>{try{using(var c=new System.Data.OleDb.OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=\""+cfg.DatabasePath.Replace("\"","")+"\";"+(String.IsNullOrEmpty(cfg.DatabasePassword)?"":"Jet OLEDB:Database Password=\""+cfg.DatabasePassword.Replace("\"","")+"\";"))){c.Open();string sql;if(row==null){sql="INSERT INTO ["+table+"] ("+String.Join(",",fields.Select(x=>"["+x+"]"))+ ") VALUES ("+String.Join(",",fields.Select(x=>"?"))+")";}else{sql="UPDATE ["+table+"] SET "+String.Join(",",fields.Select(x=>"["+x+"]=?"))+" WHERE [Id]=?";}using(var cmd=new System.Data.OleDb.OleDbCommand(sql,c)){foreach(string field in fields){object val=inputs[field].Text.Trim();if(table=="Artikulli"&&(field=="Cmimihyrjes"||field=="Cmimi i daljes"||field=="Sasia Stock")){decimal d;Decimal.TryParse(Convert.ToString(val),NumberStyles.Any,CultureInfo.CurrentCulture,out d);val=d;}cmd.Parameters.AddWithValue("?",val);}if(row!=null)cmd.Parameters.AddWithValue("?",Convert.ToInt32(row["Id"]));cmd.ExecuteNonQuery();}}f.DialogResult=DialogResult.OK;f.Close();}catch(Exception ex){MessageBox.Show("Nuk u ruajtën të dhënat: "+ex.Message,"Gabim",MessageBoxButtons.OK,MessageBoxIcon.Error);}};
+    if(f.ShowDialog(this)==DialogResult.OK&&afterSave!=null)afterSave();
+   }
+  }
+  void DeleteSelected(string table,DataGridView grid,string displayField,Action afterDelete){
+   if(grid.CurrentRow==null||!(grid.CurrentRow.DataBoundItem is DataRowView rv)){MessageBox.Show("Zgjidh një rresht.");return;}int id;try{id=Convert.ToInt32(rv.Row["Id"]);}catch{MessageBox.Show("Nuk u gjet ID e rreshtit.");return;}string name=rv.Row.Table.Columns.Contains(displayField)?Convert.ToString(rv.Row[displayField]):id.ToString();if(MessageBox.Show("Të fshihet "+name+"?","Konfirmo fshirjen",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
+   try{using(var c=new System.Data.OleDb.OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=\""+cfg.DatabasePath.Replace("\"","")+"\";"+(String.IsNullOrEmpty(cfg.DatabasePassword)?"":"Jet OLEDB:Database Password=\""+cfg.DatabasePassword.Replace("\"","")+"\";"))){c.Open();using(var cmd=new System.Data.OleDb.OleDbCommand("DELETE FROM ["+table+"] WHERE [Id]=?",c)){cmd.Parameters.AddWithValue("?",id);cmd.ExecuteNonQuery();}}if(afterDelete!=null)afterDelete();}catch(Exception ex){MessageBox.Show("Nuk u fshi. Mund të ketë lidhje me dokumente ekzistuese.\r\n"+ex.Message,"Gabim",MessageBoxButtons.OK,MessageBoxIcon.Error);}
   }
   void BuildSettings(){
    content.Controls.Add(Heading("Konfigurimet"));
