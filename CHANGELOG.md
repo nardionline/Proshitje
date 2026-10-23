@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.7 - Fatura Popup & Maximized
+- Main WPF window starts maximized.
+- Removed the redundant keypad button beside quantity; click the quantity value to open the touch keypad.
+- Price click opens keypad when price-edit permission is enabled.
+- Line total click opens keypad for authorized users; accepted value is represented by recalculating unit price for that quantity.
+- Touch keypad is resizable, scrolls the keypad if needed, and reserves a fixed bottom row for Anulo/Konfirmo.
+- Right-clicking price checks cost/margin permission; actual cost/margin is not shown until the purchase-cost field in MDB is verified.
+- Build not verified on Windows/MSBuild.
+
+# Changelog
+
 ## 2.0.6 - Fix Build Errors
 - Added the WPF Controls.Primitives namespace required by UniformGrid.
 - Corrected invalid two-argument Thickness constructors to four-argument constructors.

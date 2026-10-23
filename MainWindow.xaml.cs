@@ -129,18 +129,35 @@ namespace ProShitje.Wpf {
    } else box.Text=line.Quantity.ToString("0.###",Sq);
    UpdateTotals();
   }
+  private void QuantityCell_MouseLeftButtonUp(object sender,MouseButtonEventArgs e){
+   var box=sender as TextBox;var line=box?.DataContext as InvoiceLine;if(line==null)return;
+   var dlg=new TouchKeypadWindow("Ndrysho sasinë",line.Quantity.ToString("0.###",Sq),true){Owner=this};
+   if(dlg.ShowDialog()==true){decimal q;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out q)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out q)){if(q>0&&q<=1000000)line.Quantity=q;else MessageBox.Show("Sasia duhet të jetë më e madhe se zero.");}}
+   UpdateTotals();InvoiceGrid.Items.Refresh();e.Handled=true;
+  }
   private void QuantityKeypad_Click(object sender,RoutedEventArgs e){
    var b=sender as Button;var line=b?.DataContext as InvoiceLine;if(line==null)return;
    var dlg=new TouchKeypadWindow("Ndrysho sasinë",line.Quantity.ToString("0.###",Sq),true){Owner=this};
    if(dlg.ShowDialog()==true){decimal q;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out q)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out q)){if(q>0&&q<=1000000)line.Quantity=q;else MessageBox.Show("Sasia duhet të jetë më e madhe se zero.");}}
    UpdateTotals();
   }
-  private void PriceCell_MouseRightButtonUp(object sender,MouseButtonEventArgs e){
+  private void PriceCell_MouseLeftButtonUp(object sender,MouseButtonEventArgs e){
    var t=sender as TextBlock;var line=t?.DataContext as InvoiceLine;if(line==null)return;
-   if(!canEditPrice){MessageBox.Show("Ndryshimi i çmimit kërkon autorizim. Përdor 'Të drejtat' për t'u autorizuar.","Të drejtat",MessageBoxButton.OK,MessageBoxImage.Information);return;}
+   if(!canEditPrice){MessageBox.Show("Ndryshimi i çmimit kërkon autorizim. Përdor 'Të drejtat' për t'u autorizuar.","Të drejtat",MessageBoxButton.OK,MessageBoxImage.Information);e.Handled=true;return;}
    var dlg=new TouchKeypadWindow("Ndrysho çmimin",line.Price.ToString("0.00",Sq),true){Owner=this};
    if(dlg.ShowDialog()==true){decimal p;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out p)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out p)){if(p>=0&&p<=100000000)line.Price=p;else MessageBox.Show("Çmimi nuk është i vlefshëm.");}}
-   UpdateTotals();InvoiceGrid.Items.Refresh();
+   UpdateTotals();InvoiceGrid.Items.Refresh();e.Handled=true;
+  }
+  private void PriceCell_MouseRightButtonUp(object sender,MouseButtonEventArgs e){
+   if(!canViewCostMargin){MessageBox.Show("Shikimi i çmimit të blerjes dhe marzhit kërkon autorizim.","Të drejtat",MessageBoxButton.OK,MessageBoxImage.Information);e.Handled=true;return;}
+   MessageBox.Show("E drejta është aktive, por çmimi i blerjes nuk është lidhur ende me një fushë të verifikuar në MDB. Nuk do të shfaqim kosto ose marzh të hamendësuar.","Çmimi i blerjes dhe marzhi",MessageBoxButton.OK,MessageBoxImage.Information);e.Handled=true;
+  }
+  private void TotalCell_MouseLeftButtonUp(object sender,MouseButtonEventArgs e){
+   var t=sender as TextBlock;var line=t?.DataContext as InvoiceLine;if(line==null)return;
+   if(!canEditPrice){MessageBox.Show("Ndryshimi i totalit kërkon autorizim.","Të drejtat",MessageBoxButton.OK,MessageBoxImage.Information);e.Handled=true;return;}
+   var dlg=new TouchKeypadWindow("Ndrysho totalin e rreshtit",line.LineTotal.ToString("0.00",Sq),true){Owner=this};
+   if(dlg.ShowDialog()==true){decimal total;if(decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.CurrentCulture,out total)||decimal.TryParse(dlg.Value,NumberStyles.Number,CultureInfo.InvariantCulture,out total)){if(total>=0&&line.Quantity>0)line.Price=decimal.Round(total/line.Quantity,4);else MessageBox.Show("Totali nuk është i vlefshëm.");}}
+   UpdateTotals();InvoiceGrid.Items.Refresh();e.Handled=true;
   }
   private void Permissions_Click(object sender,RoutedEventArgs e){
    var dlg=new PermissionsWindow(canEditPrice,canViewCostMargin){Owner=this};
@@ -181,20 +198,21 @@ namespace ProShitje.Wpf {
   private readonly TextBox display=new TextBox();
   public string Value=>display.Text;
   public TouchKeypadWindow(string title,string initial,bool decimalAllowed){
-   Title=title;Width=330;Height=440;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.NoResize;Background=new SolidColorBrush(Color.FromRgb(243,247,252));
-   var root=new StackPanel{Margin=new Thickness(14)};
-   display.Text=initial;display.FontSize=26;display.Padding=new Thickness(10);display.HorizontalContentAlignment=HorizontalAlignment.Right;display.Margin=new Thickness(0,0,0,12);root.Children.Add(display);
+   Title=title;Width=390;Height=560;MinWidth=350;MinHeight=500;MaxHeight=SystemParameters.WorkArea.Height;WindowStartupLocation=WindowStartupLocation.CenterOwner;ResizeMode=ResizeMode.CanResize;WindowState=WindowState.Normal;Background=new SolidColorBrush(Color.FromRgb(243,247,252));
+   var root=new DockPanel{LastChildFill=true,Margin=new Thickness(14)};
+   var actions=new UniformGrid{Columns=2,Margin=new Thickness(0,10,0,0),MinHeight=54};DockPanel.SetDock(actions,Dock.Bottom);root.Children.Add(actions);
+   display.Text=initial;display.FontSize=26;display.Padding=new Thickness(10);display.HorizontalContentAlignment=HorizontalAlignment.Right;display.Margin=new Thickness(0,0,0,12);DockPanel.SetDock(display,Dock.Top);root.Children.Add(display);
    var grid=new UniformGrid{Columns=3};
    foreach(var key in new[]{"7","8","9","4","5","6","1","2","3","C","0","⌫",","}){
-    var b=new Button{Content=key,FontSize=22,Margin=new Thickness(3),MinHeight=48};
+    var b=new Button{Content=key,FontSize=22,Margin=new Thickness(3),MinHeight=54,Padding=new Thickness(8)};
     b.Click+=(s,e)=>{string k=Convert.ToString(b.Content);if(k=="C")display.Clear();else if(k=="⌫"){if(display.Text.Length>0)display.Text=display.Text.Substring(0,display.Text.Length-1);}else if(k==","){if(!display.Text.Contains(",")&&!display.Text.Contains("."))display.Text+=CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;}else display.Text+=k;display.CaretIndex=display.Text.Length;};
     grid.Children.Add(b);
    }
-   root.Children.Add(grid);
-   var actions=new UniformGrid{Columns=2,Margin=new Thickness(0,10,0,0)};
-   var cancel=new Button{Content="Anulo",MinHeight=44,Margin=new Thickness(3)};cancel.Click+=(s,e)=>{DialogResult=false;};
-   var ok=new Button{Content="Konfirmo",MinHeight=44,Margin=new Thickness(3),Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};ok.Click+=(s,e)=>{decimal v;if(!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out v)&&!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out v)){MessageBox.Show("Vendos një numër të vlefshëm.");return;}DialogResult=true;};
-   actions.Children.Add(cancel);actions.Children.Add(ok);root.Children.Add(actions);Content=root;
+   var keyScroll=new ScrollViewer{Content=grid,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(keyScroll);
+   var actions=new UniformGrid{Columns=2,Margin=new Thickness(0,10,0,0),MinHeight=54};DockPanel.SetDock(actions,Dock.Bottom);
+   var cancel=new Button{Content="Anulo",MinHeight=48,Margin=new Thickness(3),FontSize=15};cancel.Click+=(s,e)=>{DialogResult=false;};
+   var ok=new Button{Content="Konfirmo",MinHeight=48,Margin=new Thickness(3),FontSize=15,Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};ok.Click+=(s,e)=>{decimal v;if(!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out v)&&!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out v)){MessageBox.Show("Vendos një numër të vlefshëm.");return;}DialogResult=true;};
+   actions.Children.Add(cancel);actions.Children.Add(ok);Content=root;Loaded+=(s,e)=>{display.Focus();display.SelectAll();};
   }
  }
  public sealed class PermissionsWindow : Window {
