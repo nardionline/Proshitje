@@ -47,3 +47,8 @@
 - Removed explicit duplicate Microsoft.WinFX.targets import; Microsoft.CSharp.targets imports framework targets.
 - No database schema or save behavior changes.
 - Build not verified on Windows.
+
+## 2.0.8 - Fix Duplicate Actions
+- Removed the duplicate `actions` local declaration reported by MSBuild CS0128.
+- Kept the original bottom-docked Anulo/Konfirmo action panel.
+- Build not verified locally; validate with GitHub Actions.

@@ -209,7 +209,6 @@ namespace ProShitje.Wpf {
     grid.Children.Add(b);
    }
    var keyScroll=new ScrollViewer{Content=grid,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(keyScroll);
-   var actions=new UniformGrid{Columns=2,Margin=new Thickness(0,10,0,0),MinHeight=54};DockPanel.SetDock(actions,Dock.Bottom);
    var cancel=new Button{Content="Anulo",MinHeight=48,Margin=new Thickness(3),FontSize=15};cancel.Click+=(s,e)=>{DialogResult=false;};
    var ok=new Button{Content="Konfirmo",MinHeight=48,Margin=new Thickness(3),FontSize=15,Background=new SolidColorBrush(Color.FromRgb(8,102,214)),Foreground=Brushes.White};ok.Click+=(s,e)=>{decimal v;if(!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out v)&&!decimal.TryParse(display.Text,NumberStyles.Number,CultureInfo.InvariantCulture,out v)){MessageBox.Show("Vendos një numër të vlefshëm.");return;}DialogResult=true;};
    actions.Children.Add(cancel);actions.Children.Add(ok);Content=root;Loaded+=(s,e)=>{display.Focus();display.SelectAll();};

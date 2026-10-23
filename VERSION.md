@@ -1,7 +1,7 @@
-# ProShitje WPF 2.0.7 - Fatura Popup & Maximized
+# ProShitje WPF 2.0.8 - Fix Duplicate Actions
 
-Base: ProShitje WPF 2.0.6 - Fix Build Errors.
+Base: ProShitje WPF 2.0.7 - Fatura Popup & Maximized.
 
-Changes: main window starts maximized; removed redundant quantity keypad button; quantity, price, and line total open touch keypad/editor interactions; keypad is resizable and keeps Cancel/Confirm buttons visible while keys can scroll. Price edit remains permission-gated. Right-clicking price checks cost/margin permission but intentionally does not display fabricated values because the MDB purchase-cost field has not been identified.
+Changes: removed the duplicate local declaration of `actions` in `TouchKeypadWindow`, which caused CS0128. The existing `actions` UniformGrid remains docked at the bottom and receives the Cancel/Confirm buttons.
 
-Build status: NOT VERIFIED on Windows/MSBuild. Must validate with GitHub Actions before use.
+Build status: NOT VERIFIED on Windows/MSBuild. Run GitHub Actions before use.
